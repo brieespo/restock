@@ -12,7 +12,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#f6faf7;--card:#fff;--accent:#2e7d5b;--accent-light:#e4f2ea;--sand:#d3e6da;--text:#243330;--muted:#65786f;--border:#d7e4dc;
---stocked:#2b8a3e;--stocked-bg:#eaf7ed;--running_low:#9a6f20;--running_low-bg:#faf0d7;--out:#b03030;--out-bg:#f9e5e3;--ordered:#1d6f8c;--ordered-bg:#e0f1f5;--predicted:#6b4fa0;--predicted-bg:#efe8f7;--star:#e6a817;--star-empty:#dbe2dd}
+--stocked:#2b8a3e;--stocked-bg:#eaf7ed;--running_low:#9a6f20;--running_low-bg:#faf0d7;--out:#b03030;--out-bg:#f9e5e3;--ordered:#1d6f8c;--ordered-bg:#e0f1f5;--predicted:#6b4fa0;--predicted-bg:#efe8f7;--price:#2b7a6e;--price-bg:#e3f2ee;--star:#e6a817;--star-empty:#dbe2dd}
 :root[data-theme="denim"]{--bg:#f7f9fb;--accent:#3b5e8c;--accent-light:#e7eef6;--sand:#d8e2ee;--muted:#68758a;--border:#d9e1eb}
 :root[data-theme="raspberry"]{--bg:#fcf7f8;--accent:#a13e5c;--accent-light:#f7e5ea;--sand:#eed7dd;--muted:#846c73;--border:#ead4da}
 :root[data-theme="mustard"]{--bg:#fdfbf1;--accent:#82680a;--accent-light:#f7efce;--sand:#eee3b8;--muted:#7b7353;--border:#e9dfba}
@@ -26,6 +26,7 @@ header p{font-family:'DM Serif Display',Georgia,serif;font-style:italic;font-siz
 .btn:hover{opacity:.88}
 .btn-accent{background:var(--accent);color:#fff}
 .btn-outline{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.5)}
+.btn-outline.active{background:#fff;color:var(--accent);border-color:#fff}
 .btn-cta{background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.03));color:#fff;border:1px solid rgba(255,255,255,.4);box-shadow:0 2px 0 rgba(0,0,0,.25),0 3px 7px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.4);text-shadow:0 1px 1px rgba(0,0,0,.2);transition:transform .08s,box-shadow .08s,opacity .15s}
 .btn-cta:active{transform:translateY(2px);box-shadow:0 0 0 rgba(0,0,0,.25),0 1px 2px rgba(0,0,0,.15),inset 0 1px 2px rgba(0,0,0,.12)}
 .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);padding:.3rem .8rem;font-size:.8rem;border-radius:5px;cursor:pointer;font-family:inherit}
@@ -59,11 +60,13 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
 .sp-running_low{background:var(--running_low-bg);border-left-color:var(--running_low)}
 .sp-ordered{background:var(--ordered-bg);border-left-color:var(--ordered)}
 .sp-predicted{background:var(--predicted-bg);border-left-color:var(--predicted)}
+.sp-price{background:var(--price-bg);border-left-color:var(--price)}
 .sp-title{display:flex;align-items:baseline;gap:.5rem;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.2rem}
 .sp-out .sp-title{color:var(--out)}
 .sp-running_low .sp-title{color:var(--running_low)}
 .sp-ordered .sp-title{color:var(--ordered)}
 .sp-predicted .sp-title{color:var(--predicted)}
+.sp-price .sp-title{color:var(--price)}
 .sp-cnt{font-family:'DM Serif Display',Georgia,serif;font-size:1.5rem;letter-spacing:0}
 .sp-item{display:flex;align-items:center;justify-content:space-between;gap:.7rem;padding:.55rem 0;border-top:1px solid rgba(0,0,0,.07);flex-wrap:wrap;cursor:pointer}
 .sp-item:first-of-type{border-top:none}
@@ -77,7 +80,35 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
 .snooze-btn{background:var(--sand);color:var(--text);border:none;padding:.3rem .7rem;font-size:.76rem;border-radius:6px;font-weight:600;cursor:pointer;font-family:inherit}
 .snooze-btn:hover{opacity:.85}
 .pcard-predict{font-size:.8rem;color:var(--predicted);font-weight:600}
+.shrink-chip{font-size:.78rem;color:var(--price);font-weight:600;background:var(--price-bg);display:inline-block;padding:.2rem .6rem;border-radius:6px;margin-top:.1rem;cursor:help}
 .sec-title{font-family:'DM Serif Display',Georgia,serif;font-size:1.3rem;margin:1.4rem 0 .9rem}
+/* Restock rhythm heat-strip */
+.rhythm-strip{display:flex;gap:.4rem;margin-bottom:.5rem}
+.rhythm-week{flex:1;min-width:0;border-radius:10px;padding:.6rem .3rem;text-align:center;cursor:pointer;border:1.5px solid var(--border);background:var(--card);transition:transform .15s}
+.rhythm-week:hover{transform:translateY(-2px)}
+.rhythm-week.active{border-color:var(--accent)}
+.rw-label{font-size:.66rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.02em}
+.rw-count{font-family:'DM Serif Display',Georgia,serif;font-size:1.35rem;margin-top:.1rem}
+.rhythm-week.heat-1{background:#fdf3e0}
+.rhythm-week.heat-2{background:#fbe4b8}
+.rhythm-week.heat-3{background:#f5c375}
+.rhythm-week.heat-4{background:#e8a13a}
+.rhythm-week.heat-4 .rw-label,.rhythm-week.heat-4 .rw-count{color:#3a2600}
+.rhythm-detail{background:var(--accent-light);border-radius:10px;padding:.7rem 1rem;margin-bottom:1.4rem;font-size:.85rem}
+.rhythm-detail .rd-item{padding:.25rem 0}
+.rhythm-detail .rd-empty{color:var(--muted)}
+/* Shopping mode */
+.shop-group{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:1rem 1.1rem;margin-bottom:1rem}
+.shop-group-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.5rem;gap:.6rem;flex-wrap:wrap}
+.shop-group-head .sg-name{font-family:'DM Serif Display',Georgia,serif;font-size:1.1rem}
+.shop-total{font-size:.8rem;color:var(--muted);font-weight:600;white-space:nowrap}
+.shop-item{display:flex;align-items:center;gap:.6rem;padding:.45rem 0;border-top:1px solid var(--border);cursor:pointer;font-size:.9rem}
+.shop-item:first-of-type{border-top:none}
+.shop-item input{accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.shop-item-name{flex:1}
+.shop-item-brand{color:var(--muted);font-size:.8rem;font-weight:600}
+.shop-item-price{color:var(--muted);font-size:.85rem;white-space:nowrap}
+.shop-item.checked .shop-item-name{text-decoration:line-through;color:var(--muted)}
 .toolbar{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.4rem}
 .tab-strip{display:flex;gap:.4rem;flex-wrap:wrap}
 .tab{padding:.4rem .95rem;border-radius:999px;border:1.5px solid var(--border);background:var(--card);font-size:.85rem;font-weight:600;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
@@ -241,6 +272,8 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
       <div class="ui-sub"><span id="user-email"></span> (<a onclick="doSignOut()">sign out</a>)</div>
     </div>
     <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+      <button class="btn btn-outline active" id="nav-home" onclick="showScreen('home')">🏠 Home</button>
+      <button class="btn btn-outline" id="nav-shop" onclick="showScreen('shop')">🛒 Shopping</button>
       <button class="btn btn-cta" onclick="openAdd()">+ Add Product</button>
       <div class="more-menu" id="more-menu">
         <button class="btn btn-outline" onclick="toggleMoreMenu()">⋯ More</button>
@@ -257,6 +290,7 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
 </header>
 
 <main>
+<div id="home-section">
   <div class="empty-banner" id="empty-banner" style="display:none">
     <p>No products yet. <span>Paste your list (one product per line) to load up fast, or add your first product.</span></p>
     <button class="btn btn-accent" onclick="openImport()">📋 Paste a list</button>
@@ -277,6 +311,18 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
   </div>
   <div class="pgrid" id="pgrid"></div>
   <div class="no-results" id="no-results" style="display:none">No products match.</div>
+</div>
+
+<div id="shop-section" style="display:none">
+  <div class="sec-title">Restock rhythm — next 8 weeks</div>
+  <div class="rhythm-strip" id="rhythm-strip"></div>
+  <div id="rhythm-detail"></div>
+  <div class="sec-title">Shopping list</div>
+  <div class="empty-banner" id="shop-empty" style="display:none">
+    <p>Nothing needed right now. <span>Items marked low/out, on order, or due soon will show up here, grouped by store.</span></p>
+  </div>
+  <div id="shop-groups"></div>
+</div>
 </main>
 
 <!-- Add / Edit modal -->
@@ -316,6 +362,7 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
         <div class="field"><label>Add a past purchase — date</label><input id="f-hist-date" type="date"></div>
         <div class="field"><label>Price</label><input id="f-hist-price" type="number" step="0.01" min="0" placeholder="$"></div>
         <div class="field"><label>Store</label><input id="f-hist-store" placeholder="Store"></div>
+        <div class="field"><label>Size</label><input id="f-hist-size" placeholder="e.g. 19 oz"></div>
       </div>
       <button class="btn btn-ghost" type="button" onclick="addHistPurchase()">＋ Add to history</button>
       <div class="form-sec">Catalog notes</div>
@@ -341,6 +388,7 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
         <div class="field"><label>Price</label><input id="buy-price" type="number" step="0.01" min="0" placeholder="$"></div>
         <div class="field"><label>Store</label><input id="buy-store" placeholder="Store"></div>
       </div>
+      <div class="field"><label>Size (optional — powers the price-per-unit tracker)</label><input id="buy-size" placeholder="e.g. 19 oz"></div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('buy-modal')">Cancel</button>
@@ -402,10 +450,15 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
         <p>Tap <strong>🛒 Bought it!</strong> any time you restock something — it logs today's date (editable), prefills the last price/store, and marks the product Stocked. Once a product has <strong>2+ logged purchases</strong>, Restock learns your real rebuy pace (the median gap between purchases) and predicts when you'll need it again — no manual guessing. With just one purchase, set a rough "rebuy every ~N days" estimate on the product's edit screen until the real pattern emerges.</p></div>
       <div class="help-section"><h3>Predicted due soon</h3>
         <p>Products nearing their predicted rebuy date surface in their own <strong>🔮 Predicted due soon</strong> panel — even if you never marked them low. This is a separate signal from status: "you marked this low" and "you usually rebuy around now" are shown distinctly. Tap <strong>🛒 Bought it!</strong> if it's time, or <strong>😌 Still fine, +2wk</strong> to snooze it — snoozing gently widens the prediction so the radar gets quieter and more accurate the more you use it. Marking something Out earlier than predicted does the opposite, tightening the estimate.</p></div>
+      <div class="help-section"><h3>Shopping mode</h3>
+        <p>The <strong>🛒 Shopping</strong> tab groups everything you currently need — running low, out, on order, or due soon — by store, checklist style, with an estimated total per store. Check items off as you grab them, then tap <strong>✓ Mark checked as bought</strong> to log all of them as purchased at once (today's date, that store, listed price) — the fastest way to feed the interval engine.</p></div>
+      <div class="help-section"><h3>Restock rhythm</h3>
+        <p>The heat-strip at the top of Shopping mode previews predicted run-outs over the <strong>next 8 weeks</strong> — a quiet week or two, then a cluster lighting up together, is your "big Costco run" signal. Tap a week to see exactly what's predicted to run out then.</p></div>
+      <div class="help-section"><h3>Price watch &amp; shrinkflation</h3>
+        <p>Add a <strong>size</strong> when logging a purchase (e.g. "19 oz") and Restock tracks price-per-unit over time. Once the same size has been bought at meaningfully different times, a noticeable jump (8%+) surfaces as a <strong>📈 Price watch</strong> panel on Home and a chip on the product — the kind of creeping cost nobody notices without the data.</p></div>
       <div class="help-section"><h3>Coming soon</h3>
-        <ul><li><strong>Shopping mode</strong> grouped by store, with a running total.</li>
-        <li><strong>Price/unit history</strong> and a shrinkflation flag.</li>
-        <li><strong>Restock rhythm view</strong> — a calendar heat-strip of predicted run-outs.</li></ul></div>
+        <ul><li><strong>Trusted-brands line</strong> — a one-liner summarizing your rebuying habits.</li>
+        <li>Hub theming, once the personal hub site exists.</li></ul></div>
     </div>
   </div>
 </div>
@@ -489,6 +542,44 @@ function isPredictedDue(p){
   return run != null && daysUntil(run) <= 14;
 }
 
+// ---- PRICE / UNIT TRACKING ----
+function parseSize(sizeStr){
+  const m = String(sizeStr||'').trim().match(/^([\d.]+)\s*(.*)$/);
+  if(!m) return null;
+  const qty = parseFloat(m[1]);
+  if(!qty) return null;
+  let unit = m[2].trim().toLowerCase().replace(/\.$/,'').replace(/s$/,'');
+  return {qty, unit: unit || 'unit'};
+}
+function unitPriceEntries(p){
+  return (p.purchases||[])
+    .map(pu => {
+      const parsed = parseSize(pu.size || p.size);
+      if(!parsed || !pu.price) return null;
+      return {date: pu.date, price: +pu.price, qty: parsed.qty, unit: parsed.unit, unitPrice: +pu.price / parsed.qty};
+    })
+    .filter(Boolean)
+    .sort((a,b) => a.date.localeCompare(b.date));
+}
+function shrinkflationCheck(p){
+  const entries = unitPriceEntries(p);
+  if(entries.length < 2) return null;
+  const byUnit = {};
+  entries.forEach(e => (byUnit[e.unit] = byUnit[e.unit]||[]).push(e));
+  const unit = Object.keys(byUnit).sort((a,b) => byUnit[b].length - byUnit[a].length)[0];
+  const list = byUnit[unit];
+  if(list.length < 2) return null;
+  const from = list[0], to = list[list.length-1];
+  if(dayDiff(from.date, to.date) < 150) return null;
+  const pct = (to.unitPrice - from.unitPrice) / from.unitPrice;
+  return pct >= 0.08 ? {pct, unit, from, to} : null;
+}
+function shrinkChipHTML(p){
+  const s = shrinkflationCheck(p);
+  if(!s) return '';
+  return `<div class="shrink-chip" title="$${s.from.unitPrice.toFixed(2)}/${esc(s.unit)} on ${fmtDate(s.from.date)} → $${s.to.unitPrice.toFixed(2)}/${esc(s.unit)} on ${fmtDate(s.to.date)}">📈 +${Math.round(s.pct*100)}%/${esc(s.unit)} since ${fmtDate(s.from.date)}</div>`;
+}
+
 // ---- RENDER ----
 function filtered(){
   const q = (document.getElementById('search-box').value||'').toLowerCase().trim();
@@ -530,10 +621,19 @@ function spPredictedItem(p){
     </div>
   </div>`;
 }
+function spPriceItem(p){
+  const s = shrinkflationCheck(p);
+  return `<div class="sp-item" onclick="openEdit(${p.id})">
+    <div class="sp-info"><strong>${esc(p.name)}</strong>${p.brand?` <span class="sp-brand">${esc(p.brand)}</span>`:''}
+      <div class="sp-note" style="color:var(--price)">📈 up ${Math.round(s.pct*100)}% per ${esc(s.unit)} since ${fmtDate(s.from.date)}</div>
+    </div>
+  </div>`;
+}
 function dashHTML(){
   if(!P.length) return '';
   const out = P.filter(p => p.status==='out'), low = P.filter(p => p.status==='running_low'), ord = P.filter(p => p.status==='ordered');
   const predicted = P.filter(isPredictedDue).sort((a,b) => daysUntil(predictedRunout(a)) - daysUntil(predictedRunout(b)));
+  const priceWatch = P.filter(shrinkflationCheck).sort((a,b) => shrinkflationCheck(b).pct - shrinkflationCheck(a).pct);
   const n = out.length + low.length + ord.length + predicted.length;
   const banner = n
     ? `<div class="dash-banner attention"><span class="dash-num">${n}</span><div>
@@ -547,9 +647,20 @@ function dashHTML(){
   const panel = (items, key, title, itemFn) => !items.length ? '' :
     `<div class="status-panel sp-${key}"><div class="sp-title">${title}<span class="sp-cnt">${items.length}</span></div>${items.map(itemFn||spItem).join('')}</div>`;
   return banner + panel(out,'out','❌ Out') + panel(low,'running_low','📉 Running low') + panel(ord,'ordered','📦 Ordered') +
-    panel(predicted,'predicted','🔮 Predicted due soon', spPredictedItem);
+    panel(predicted,'predicted','🔮 Predicted due soon', spPredictedItem) +
+    panel(priceWatch,'price','📈 Price watch', spPriceItem);
+}
+let _screen = 'home';
+function showScreen(s){
+  _screen = s;
+  document.getElementById('home-section').style.display = s==='home' ? '' : 'none';
+  document.getElementById('shop-section').style.display = s==='shop' ? '' : 'none';
+  document.getElementById('nav-home').classList.toggle('active', s==='home');
+  document.getElementById('nav-shop').classList.toggle('active', s==='shop');
+  render();
 }
 function render(){
+  if(_screen === 'shop'){ renderRhythm(); renderShopGroups(); return; }
   const counts = {all: P.length};
   Object.keys(CATEGORIES).forEach(c => counts[c] = 0);
   P.forEach(p => { if(counts[p.category] !== undefined) counts[p.category]++; });
@@ -587,10 +698,97 @@ function cardHTML(p){
     ${p.size||p.rating?`<div class="pcard-meta">${[p.size?esc(p.size):'',p.rating?`<span class="stars">${'★'.repeat(p.rating)}</span>`:''].filter(Boolean).join(' · ')}</div>`:''}
     ${stores?`<div class="pcard-stores">🛒 ${stores}</div>`:''}
     ${predictedHint}
+    ${shrinkChipHTML(p)}
     ${p.substitutes?`<div class="pcard-subs">Backup: ${esc(p.substitutes)}</div>`:''}
     ${p.notes?`<div class="pcard-notes">${esc(p.notes)}</div>`:''}
     <div class="pcard-actions">${buyBtn}${flows}</div>
   </div>`;
+}
+
+// ---- RESTOCK RHYTHM ----
+let _rhythmOpen = null;
+function computeRhythm(){
+  const weeks = Array.from({length:8}, (_,i) => ({start: addDays(today(), i*7), items: []}));
+  P.forEach(p => {
+    const run = predictedRunout(p);
+    if(run == null) return;
+    const d = daysUntil(run);
+    if(d < 0 || d >= 56) return;
+    weeks[Math.min(7, Math.floor(d/7))].items.push(p);
+  });
+  return weeks;
+}
+function heatTier(n){ return n===0?0 : n===1?1 : n===2?2 : n<=4?3:4; }
+function renderRhythm(){
+  const weeks = computeRhythm();
+  document.getElementById('rhythm-strip').innerHTML = weeks.map((w,i) =>
+    `<div class="rhythm-week heat-${heatTier(w.items.length)}${_rhythmOpen===i?' active':''}" onclick="toggleRhythmWeek(${i})">
+      <div class="rw-label">${i===0?'This wk':fmtDate(w.start)}</div>
+      <div class="rw-count">${w.items.length||'–'}</div>
+    </div>`).join('');
+  renderRhythmDetail(weeks);
+}
+function toggleRhythmWeek(i){ _rhythmOpen = _rhythmOpen===i ? null : i; renderRhythm(); }
+function renderRhythmDetail(weeks){
+  const box = document.getElementById('rhythm-detail');
+  if(_rhythmOpen == null){ box.innerHTML = ''; return; }
+  const w = weeks[_rhythmOpen];
+  box.innerHTML = `<div class="rhythm-detail">${w.items.length ? w.items.map(p =>
+    `<div class="rd-item">🔮 <strong>${esc(p.name)}</strong>${p.brand?` · ${esc(p.brand)}`:''} — ${fmtDate(predictedRunout(p))}</div>`).join('')
+    : '<div class="rd-empty">Nothing predicted to run out this week.</div>'}</div>`;
+}
+
+// ---- SHOPPING MODE ----
+let _shopChecked = new Set();
+function shoppingNeeds(){
+  return P.filter(p => p.status==='running_low' || p.status==='out' || isPredictedDue(p));
+}
+function primaryStore(p){
+  const s = (p.where_to_buy||[])[0];
+  return s && s.store ? s.store : null;
+}
+function shopItemHTML(p, store){
+  const price = (p.where_to_buy||[]).find(w => w.store===store)?.price ?? null;
+  const checked = _shopChecked.has(p.id);
+  return `<label class="shop-item${checked?' checked':''}">
+    <input type="checkbox" ${checked?'checked':''} onchange="toggleShopCheck(${p.id})">
+    <span class="shop-item-name">${esc(p.name)}${p.brand?` <span class="shop-item-brand">${esc(p.brand)}</span>`:''}</span>
+    <span class="shop-item-price">${price?'$'+(+price).toFixed(2):''}</span>
+  </label>`;
+}
+function renderShopGroups(){
+  const needs = shoppingNeeds();
+  document.getElementById('shop-empty').style.display = needs.length ? 'none' : '';
+  const groups = {};
+  needs.forEach(p => { const s = primaryStore(p) || 'Unspecified store'; (groups[s] = groups[s]||[]).push(p); });
+  const storeNames = Object.keys(groups).sort((a,b) => (a==='Unspecified store') - (b==='Unspecified store') || a.localeCompare(b));
+  document.getElementById('shop-groups').innerHTML = storeNames.map(store => {
+    const items = groups[store];
+    const total = items.reduce((s,p) => s + (+((p.where_to_buy||[]).find(w=>w.store===store)?.price) || 0), 0);
+    return `<div class="shop-group">
+      <div class="shop-group-head"><span class="sg-name">${esc(store)}</span><span class="shop-total">${items.length} item${items.length>1?'s':''}${total?' · ~$'+total.toFixed(2):''}</span></div>
+      ${items.map(p => shopItemHTML(p, store)).join('')}
+      <button class="btn btn-ghost" style="margin-top:.6rem" onclick="markStoreChecked('${store.replace(/'/g,"\\'")}')">✓ Mark checked as bought</button>
+    </div>`;
+  }).join('');
+}
+function toggleShopCheck(id){
+  if(_shopChecked.has(id)) _shopChecked.delete(id); else _shopChecked.add(id);
+  renderShopGroups();
+}
+function markStoreChecked(store){
+  const items = shoppingNeeds().filter(p => (primaryStore(p)||'Unspecified store') === store && _shopChecked.has(p.id));
+  if(!items.length){ alert('Check off items first, then mark them bought.'); return; }
+  items.forEach(p => {
+    const price = (p.where_to_buy||[]).find(w => w.store===store)?.price ?? null;
+    (p.purchases = p.purchases||[]).push({date: today(), price, store: store==='Unspecified store'?'':store, size: p.size||''});
+    p.status = 'stocked';
+    p.snooze_until = null;
+    _shopChecked.delete(p.id);
+  });
+  saveToStorage();
+  renderRhythm();
+  renderShopGroups();
 }
 
 // ---- STATUS ----
@@ -617,6 +815,7 @@ function openBuyModal(id){
   const firstStore = (p.where_to_buy||[])[0];
   document.getElementById('buy-price').value = last?.price ?? firstStore?.price ?? '';
   document.getElementById('buy-store').value = last?.store ?? firstStore?.store ?? '';
+  document.getElementById('buy-size').value = last?.size ?? p.size ?? '';
   openModal('buy-modal');
 }
 function confirmBuy(){
@@ -624,7 +823,8 @@ function confirmBuy(){
   const date = document.getElementById('buy-date').value || today();
   const price = document.getElementById('buy-price').value ? +document.getElementById('buy-price').value : null;
   const store = document.getElementById('buy-store').value.trim();
-  (p.purchases = p.purchases||[]).push({date, price, store});
+  const size = document.getElementById('buy-size').value.trim();
+  (p.purchases = p.purchases||[]).push({date, price, store, size});
   p.status = 'stocked';
   p.snooze_until = null;
   closeModal('buy-modal');
@@ -663,7 +863,7 @@ function openAdd(){
   document.getElementById('pm-title').textContent = 'Add Product';
   document.getElementById('pm-delete').style.display = 'none';
   fillCategorySelect('f-category');
-  ['f-name','f-brand','f-size','f-subs','f-notes','f-interval','f-hist-price','f-hist-store'].forEach(i => document.getElementById(i).value = '');
+  ['f-name','f-brand','f-size','f-subs','f-notes','f-interval','f-hist-price','f-hist-store','f-hist-size'].forEach(i => document.getElementById(i).value = '');
   document.getElementById('f-category').value = 'bath_body';
   document.getElementById('f-status').value = 'stocked';
   document.getElementById('f-rating').value = '';
@@ -698,6 +898,7 @@ function openEdit(id){
   document.getElementById('f-hist-date').value = today();
   document.getElementById('f-hist-price').value = '';
   document.getElementById('f-hist-store').value = '';
+  document.getElementById('f-hist-size').value = p.size||'';
   renderPurchaseHistory(p);
   openModal('product-modal');
 }
@@ -706,17 +907,23 @@ function renderPurchaseHistory(p){
   const box = document.getElementById('f-phist');
   box.innerHTML = list.length ? list.map(pu => {
     const realIdx = (p.purchases||[]).indexOf(pu);
-    return `<div class="phist-row"><span>${fmtDate(pu.date)}${pu.store?` · ${esc(pu.store)}`:''}${pu.price?` · $${(+pu.price).toFixed(2)}`:''}</span>
+    const parsed = parseSize(pu.size || p.size);
+    const unitBit = (parsed && pu.price) ? ` · $${(+pu.price/parsed.qty).toFixed(2)}/${esc(parsed.unit)}` : '';
+    return `<div class="phist-row"><span>${fmtDate(pu.date)}${pu.store?` · ${esc(pu.store)}`:''}${pu.price?` · $${(+pu.price).toFixed(2)}`:''}${pu.size?` · ${esc(pu.size)}`:''}${unitBit}</span>
       <button class="phist-x" type="button" onclick="deleteHistPurchase(${realIdx})" title="Remove">✕</button></div>`;
   }).join('') : '<div class="phist-empty">No purchases logged yet — add one below, or tap 🛒 Bought it! on the card.</div>';
   const note = document.getElementById('f-predict-note');
   const run = predictedRunout(p);
+  const bits = [];
   if(run != null){
     const basis = (p.purchases||[]).length >= 2 ? `based on your last ${p.purchases.length} purchases` : 'based on your manual interval above';
-    note.innerHTML = `<div class="predict-note">🔮 Predicted next rebuy: <strong>${fmtDate(run)}</strong> — ${basis}</div>`;
+    bits.push(`<div class="predict-note">🔮 Predicted next rebuy: <strong>${fmtDate(run)}</strong> — ${basis}</div>`);
   } else {
-    note.innerHTML = '<div class="predict-note">Log 2 purchases (or set an interval above) to get a rebuy prediction.</div>';
+    bits.push('<div class="predict-note">Log 2 purchases (or set an interval above) to get a rebuy prediction.</div>');
   }
+  const shrink = shrinkflationCheck(p);
+  if(shrink) bits.push(`<div class="predict-note" style="background:var(--price-bg)">📈 Price per <strong>${esc(shrink.unit)}</strong> is up <strong>${Math.round(shrink.pct*100)}%</strong> since ${fmtDate(shrink.from.date)} ($${shrink.from.unitPrice.toFixed(2)} → $${shrink.to.unitPrice.toFixed(2)})</div>`);
+  note.innerHTML = bits.join('');
 }
 function addHistPurchase(){
   if(_editing == null){ alert('Save the product first, then add purchase history.'); return; }
@@ -724,9 +931,11 @@ function addHistPurchase(){
   const date = document.getElementById('f-hist-date').value || today();
   const price = document.getElementById('f-hist-price').value ? +document.getElementById('f-hist-price').value : null;
   const store = document.getElementById('f-hist-store').value.trim();
-  (p.purchases = p.purchases||[]).push({date, price, store});
+  const size = document.getElementById('f-hist-size').value.trim();
+  (p.purchases = p.purchases||[]).push({date, price, store, size});
   document.getElementById('f-hist-price').value = '';
   document.getElementById('f-hist-store').value = '';
+  document.getElementById('f-hist-size').value = '';
   renderPurchaseHistory(p);
   saveToStorage(); render();
 }
