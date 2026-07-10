@@ -52,7 +52,7 @@ One row per user; products sync as a jsonb blob. Guest mode works without an acc
 ## Roadmap
 
 Phase 1 (done): auth, product CRUD, dashboard home (headline "N need attention" banner with computed counts + stacked color-coded panels for Out / Running low / Ordered), category tabs + search + status filter, one-tap status changes, paste-a-list importer, JSON export, themes.
-Phase 2: purchase logging ("Bought it"), interval engine (median purchase gap), Reorder Radar with snooze.
+Phase 2 (done): "Bought it!" one-tap purchase logging (prefills today's date + last price/store, editable); interval engine (median gap between 2+ purchases, or a manual "rebuy every ~N days" override with 0-1 purchases); a 🔮 Predicted due soon radar panel — surfaces items nearing their predicted rebuy date independent of manual status; snooze ("Still fine, +2wk") gently widens the estimate, marking something Out earlier than predicted tightens it; purchase history is viewable/editable (add/delete individual entries) from each product's edit screen.
 Phase 3: shopping mode by store, price/unit history + shrinkflation flag, restock rhythm view.
 Phase 4: polish — trusted-brands line, discontinued-watch surfacing, hub theming.
 
