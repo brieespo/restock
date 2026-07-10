@@ -12,7 +12,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#f6faf7;--card:#fff;--accent:#2e7d5b;--accent-light:#e4f2ea;--sand:#d3e6da;--text:#243330;--muted:#65786f;--border:#d7e4dc;
---stocked:#2b8a3e;--stocked-bg:#eaf7ed;--running_low:#9a6f20;--running_low-bg:#faf0d7;--out:#b03030;--out-bg:#f9e5e3;--ordered:#1d6f8c;--ordered-bg:#e0f1f5;--predicted:#6b4fa0;--predicted-bg:#efe8f7;--price:#2b7a6e;--price-bg:#e3f2ee;--star:#e6a817;--star-empty:#dbe2dd}
+--stocked:#2b8a3e;--stocked-bg:#eaf7ed;--running_low:#9a6f20;--running_low-bg:#faf0d7;--out:#b03030;--out-bg:#f9e5e3;--ordered:#1d6f8c;--ordered-bg:#e0f1f5;--predicted:#6b4fa0;--predicted-bg:#efe8f7;--price:#2b7a6e;--price-bg:#e3f2ee;--watch:#c1580f;--watch-bg:#fbe9dc;--star:#e6a817;--star-empty:#dbe2dd}
 :root[data-theme="denim"]{--bg:#f7f9fb;--accent:#3b5e8c;--accent-light:#e7eef6;--sand:#d8e2ee;--muted:#68758a;--border:#d9e1eb}
 :root[data-theme="raspberry"]{--bg:#fcf7f8;--accent:#a13e5c;--accent-light:#f7e5ea;--sand:#eed7dd;--muted:#846c73;--border:#ead4da}
 :root[data-theme="mustard"]{--bg:#fdfbf1;--accent:#82680a;--accent-light:#f7efce;--sand:#eee3b8;--muted:#7b7353;--border:#e9dfba}
@@ -46,6 +46,8 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
 .empty-banner{background:var(--accent-light);border:1.5px solid var(--sand);border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
 .empty-banner p{font-size:.9rem;margin:0}
 .empty-banner p span{color:var(--muted);font-size:.82rem;display:block;margin-top:.2rem}
+.profile-line{font-family:'DM Serif Display',Georgia,serif;font-size:1.3rem;font-style:italic;line-height:1.4;margin:0 0 1.2rem;color:var(--text);max-width:44rem}
+.profile-line strong{color:var(--accent);font-style:normal}
 /* Dashboard: headline banner + stacked status panels */
 .dash-banner{display:flex;align-items:center;gap:1.2rem;border-radius:16px;padding:1.15rem 1.5rem;margin-bottom:1.1rem;border:1.5px solid var(--border);background:var(--card)}
 .dash-banner.attention{background:var(--running_low-bg);border-color:var(--running_low)}
@@ -61,12 +63,14 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
 .sp-ordered{background:var(--ordered-bg);border-left-color:var(--ordered)}
 .sp-predicted{background:var(--predicted-bg);border-left-color:var(--predicted)}
 .sp-price{background:var(--price-bg);border-left-color:var(--price)}
+.sp-watch{background:var(--watch-bg);border-left-color:var(--watch)}
 .sp-title{display:flex;align-items:baseline;gap:.5rem;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.2rem}
 .sp-out .sp-title{color:var(--out)}
 .sp-running_low .sp-title{color:var(--running_low)}
 .sp-ordered .sp-title{color:var(--ordered)}
 .sp-predicted .sp-title{color:var(--predicted)}
 .sp-price .sp-title{color:var(--price)}
+.sp-watch .sp-title{color:var(--watch)}
 .sp-cnt{font-family:'DM Serif Display',Georgia,serif;font-size:1.5rem;letter-spacing:0}
 .sp-item{display:flex;align-items:center;justify-content:space-between;gap:.7rem;padding:.55rem 0;border-top:1px solid rgba(0,0,0,.07);flex-wrap:wrap;cursor:pointer}
 .sp-item:first-of-type{border-top:none}
@@ -295,6 +299,7 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
     <p>No products yet. <span>Paste your list (one product per line) to load up fast, or add your first product.</span></p>
     <button class="btn btn-accent" onclick="openImport()">📋 Paste a list</button>
   </div>
+  <div class="profile-line" id="profile-line"></div>
   <div id="dash"></div>
   <div class="sec-title" id="catalog-title" style="display:none">Catalog</div>
   <div class="toolbar" id="toolbar">
@@ -445,7 +450,9 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
       <div class="help-section"><h3>Paste a list</h3>
         <p>The fastest way in: <strong>⋯ More → Paste a list</strong>, one product per line as "Brand – Product – Store" (a plain product name works too). Import, then fix details on any card whenever.</p></div>
       <div class="help-section"><h3>Discontinued watch</h3>
-        <p>Flag a product 🚨 when it's being phased out — a reminder to stock up whenever you see it.</p></div>
+        <p>Flag a product 🚨 when it's being phased out. Flagged products get their own standing <strong>🚨 Discontinued watch</strong> panel on Home — not buried in the catalog — so "stock up if you see it" stays visible until you tap <strong>🛒 Bought it!</strong> or <strong>✓ Stop watching</strong>.</p></div>
+      <div class="help-section"><h3>Your rebuying profile</h3>
+        <p>The italic line at the top of Home reads your own data back to you — which brands you're loyal to, how many products you rebuy a month, and which store wins on price most often. It's rule-based (no guessing), sharpens as you log more purchases, and stays quiet until there's real data behind it.</p></div>
       <div class="help-section"><h3>Bought it! &amp; the rebuy prediction</h3>
         <p>Tap <strong>🛒 Bought it!</strong> any time you restock something — it logs today's date (editable), prefills the last price/store, and marks the product Stocked. Once a product has <strong>2+ logged purchases</strong>, Restock learns your real rebuy pace (the median gap between purchases) and predicts when you'll need it again — no manual guessing. With just one purchase, set a rough "rebuy every ~N days" estimate on the product's edit screen until the real pattern emerges.</p></div>
       <div class="help-section"><h3>Predicted due soon</h3>
@@ -457,8 +464,7 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
       <div class="help-section"><h3>Price watch &amp; shrinkflation</h3>
         <p>Add a <strong>size</strong> when logging a purchase (e.g. "19 oz") and Restock tracks price-per-unit over time. Once the same size has been bought at meaningfully different times, a noticeable jump (8%+) surfaces as a <strong>📈 Price watch</strong> panel on Home and a chip on the product — the kind of creeping cost nobody notices without the data.</p></div>
       <div class="help-section"><h3>Coming soon</h3>
-        <ul><li><strong>Trusted-brands line</strong> — a one-liner summarizing your rebuying habits.</li>
-        <li>Hub theming, once the personal hub site exists.</li></ul></div>
+        <p>Restock will pick up hub theming once your personal hub site exists to link it from.</p></div>
     </div>
   </div>
 </div>
@@ -621,6 +627,70 @@ function spPredictedItem(p){
     </div>
   </div>`;
 }
+// ---- REBUYING PROFILE LINE ----
+function totalPurchaseCount(){ return P.reduce((s,p) => s + (p.purchases||[]).length, 0); }
+function earliestPurchaseDate(){
+  let earliest = null;
+  P.forEach(p => (p.purchases||[]).forEach(pu => { if(pu.date && (!earliest || pu.date < earliest)) earliest = pu.date; }));
+  return earliest;
+}
+function brandLoyalty(){
+  const counts = {};
+  P.forEach(p => { if(p.brand && (p.purchases||[]).length) counts[p.brand] = (counts[p.brand]||0) + p.purchases.length; });
+  return Object.entries(counts).filter(([,c]) => c >= 2).sort((a,b) => b[1]-a[1]).slice(0,2).map(([brand]) => brand);
+}
+function monthlyRebuyRate(){
+  const total = totalPurchaseCount();
+  if(total < 3) return null;
+  const earliest = earliestPurchaseDate();
+  if(!earliest) return null;
+  const months = Math.max(1, dayDiff(earliest, today())/30);
+  return Math.max(1, Math.round(total/months));
+}
+function storePriceWinner(){
+  const wins = {};
+  P.forEach(p => {
+    const stores = (p.where_to_buy||[]).filter(s => s.store && s.price);
+    if(stores.length < 2) return;
+    const cheapest = stores.reduce((a,b) => (+b.price < +a.price ? b : a));
+    wins[cheapest.store] = (wins[cheapest.store]||0) + 1;
+  });
+  const ranked = Object.entries(wins).sort((a,b) => b[1]-a[1]);
+  return ranked.length ? {store: ranked[0][0], count: ranked[0][1]} : null;
+}
+function trustedBrandsLine(){
+  if(totalPurchaseCount() === 0) return "Once you've logged a few purchases, Restock will start noticing your patterns.";
+  const brands = brandLoyalty();
+  const rate = monthlyRebuyRate();
+  const winner = storePriceWinner();
+  const clauses = [];
+  if(brands.length === 1) clauses.push(`you're loyal to <strong>${esc(brands[0])}</strong>`);
+  else if(brands.length >= 2) clauses.push(`you're loyal to <strong>${esc(brands[0])}</strong> and <strong>${esc(brands[1])}</strong>`);
+  if(rate != null) clauses.push(`you rebuy ~<strong>${rate}</strong> product${rate===1?'':'s'} monthly`);
+  if(winner) clauses.push(`<strong>${esc(winner.store)}</strong> wins on price for ${winner.count} of them`);
+  if(!clauses.length) return "You're just getting started — a few more purchases and your rebuying patterns will emerge.";
+  const sentence = clauses.length === 1 ? clauses[0]
+    : clauses.length === 2 ? `${clauses[0]}, and ${clauses[1]}`
+    : `${clauses[0]}, ${clauses[1]}, and ${clauses[2]}`;
+  return sentence.charAt(0).toUpperCase() + sentence.slice(1) + '.';
+}
+
+function spWatchItem(p){
+  return `<div class="sp-item" onclick="openEdit(${p.id})">
+    <div class="sp-info"><strong>${esc(p.name)}</strong>${p.brand?` <span class="sp-brand">${esc(p.brand)}</span>`:''}${storeHint(p)}
+      <div class="sp-note" style="color:var(--watch)">🚨 seen it? stock up before it's gone</div>
+    </div>
+    <div class="sp-actions">
+      <button class="buy-btn" onclick="event.stopPropagation();openBuyModal(${p.id})">🛒 Bought it!</button>
+      <button class="snooze-btn" onclick="event.stopPropagation();stopWatching(${p.id})">✓ Stop watching</button>
+    </div>
+  </div>`;
+}
+function stopWatching(id){
+  const p = byId(id); if(!p) return;
+  p.discontinued_watch = false;
+  saveToStorage(); render();
+}
 function spPriceItem(p){
   const s = shrinkflationCheck(p);
   return `<div class="sp-item" onclick="openEdit(${p.id})">
@@ -633,6 +703,7 @@ function dashHTML(){
   if(!P.length) return '';
   const out = P.filter(p => p.status==='out'), low = P.filter(p => p.status==='running_low'), ord = P.filter(p => p.status==='ordered');
   const predicted = P.filter(isPredictedDue).sort((a,b) => daysUntil(predictedRunout(a)) - daysUntil(predictedRunout(b)));
+  const watchList = P.filter(p => p.discontinued_watch);
   const priceWatch = P.filter(shrinkflationCheck).sort((a,b) => shrinkflationCheck(b).pct - shrinkflationCheck(a).pct);
   const n = out.length + low.length + ord.length + predicted.length;
   const banner = n
@@ -648,6 +719,7 @@ function dashHTML(){
     `<div class="status-panel sp-${key}"><div class="sp-title">${title}<span class="sp-cnt">${items.length}</span></div>${items.map(itemFn||spItem).join('')}</div>`;
   return banner + panel(out,'out','❌ Out') + panel(low,'running_low','📉 Running low') + panel(ord,'ordered','📦 Ordered') +
     panel(predicted,'predicted','🔮 Predicted due soon', spPredictedItem) +
+    panel(watchList,'watch','🚨 Discontinued watch', spWatchItem) +
     panel(priceWatch,'price','📈 Price watch', spPriceItem);
 }
 let _screen = 'home';
@@ -671,6 +743,7 @@ function render(){
   const empty = P.length === 0;
   document.getElementById('empty-banner').style.display = empty ? '' : 'none';
   document.getElementById('toolbar').style.display = empty ? 'none' : '';
+  document.getElementById('profile-line').innerHTML = empty ? '' : trustedBrandsLine();
   document.getElementById('dash').innerHTML = dashHTML();
   document.getElementById('catalog-title').style.display = empty ? 'none' : '';
   const list = filtered();
