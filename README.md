@@ -37,11 +37,14 @@ One row per user; products sync as a jsonb blob. Guest mode works without an acc
   id: 1,
   name: "Daily Moisturizing Lotion",
   brand: "CeraVe",
-  category: "bath_body",        // bath_body | makeup | household | food | health | pet | other
+  category: "bath_body",        // bath_body | makeup | skincare | household | food | health | pet | other
   size: "19 oz",
   where_to_buy: [{store: "Costco", price: 11.49, url: ""}],
+  sale_patterns: [{store: "Ulta", when: "July", notes: "usually 20% off"}],  // manually-noted recurring sales
   status: "stocked",            // 'stocked' | 'running_low' | 'out' | 'ordered'
-  purchases: [],                // Phase 2: every purchase logged, drives the interval engine
+  purchases: [                  // Phase 2: every purchase logged, drives the interval engine
+    {date: "2026-05-02", price: 11.49, store: "Costco", size: "19 oz", on_sale: true}
+  ],
   interval_override_days: null,
   substitutes: "Cetaphil in a pinch",
   rating: null, notes: "",

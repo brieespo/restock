@@ -177,6 +177,12 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
 .store-row .st-url{flex:1.2}
 .store-x{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:.2rem}
 .store-x:hover{color:var(--out)}
+.sale-row{display:flex;gap:.5rem;margin-bottom:.5rem;align-items:center}
+.sale-row input{flex:1;min-width:0;padding:.5rem .65rem;border:1.5px solid var(--border);border-radius:9px;font-size:.85rem;font-family:inherit}
+.sale-row input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-light)}
+.sale-row .sl-when{flex:0 0 130px}
+.sale-tag{display:inline-flex;align-items:center;gap:.2rem;font-size:.72rem;font-weight:700;color:var(--stocked);background:var(--stocked-bg);padding:.05rem .4rem;border-radius:5px;margin-left:.4rem;vertical-align:middle}
+.sale-tag .ico{width:.8em;height:.8em}
 /* Purchase history */
 .phist{margin-top:.5rem;max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:9px}
 .phist-row{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.45rem .7rem;font-size:.83rem;border-bottom:1px solid var(--border)}
@@ -184,6 +190,7 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
 .phist-x{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;flex-shrink:0}
 .phist-x:hover{color:var(--out)}
 .phist-empty{padding:.6rem .7rem;font-size:.82rem;color:var(--muted)}
+.field-hint{font-size:.8rem;color:var(--muted);margin:-.3rem 0 .5rem}
 .predict-note{font-size:.82rem;color:var(--text);background:var(--predicted-bg);border-radius:8px;padding:.55rem .75rem;margin:.6rem 0}
 .predict-note strong{color:var(--predicted)}
 /* Import preview */
@@ -362,6 +369,10 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
       <div class="form-sec">Where to buy</div>
       <div id="f-stores"></div>
       <button class="btn btn-ghost" type="button" onclick="addStoreRow()">＋ Add store</button>
+      <div class="form-sec">Sale patterns</div>
+      <div class="field-hint">Where and when this routinely goes on sale — e.g. Ulta, July.</div>
+      <div id="f-sales"></div>
+      <button class="btn btn-ghost" type="button" onclick="addSaleRow()">＋ Add sale pattern</button>
       <div class="form-sec">Purchase history &amp; rebuy pace</div>
       <div class="field"><label>Rebuy every ~ how many days? (used until 2+ purchases are logged)</label><input id="f-interval" type="number" min="1" placeholder="e.g. 30"></div>
       <div id="f-predict-note"></div>
@@ -372,6 +383,7 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
         <div class="field"><label>Store</label><input id="f-hist-store" placeholder="Store"></div>
         <div class="field"><label>Size</label><input id="f-hist-size" placeholder="e.g. 19 oz"></div>
       </div>
+      <label class="check-row" style="margin-bottom:.6rem"><input type="checkbox" id="f-hist-sale"> Bought on sale</label>
       <button class="btn btn-ghost" type="button" onclick="addHistPurchase()">＋ Add to history</button>
       <div class="form-sec">Catalog notes</div>
       <div class="field"><label>Acceptable substitute</label><input id="f-subs" placeholder="e.g. Cetaphil in a pinch"></div>
@@ -397,6 +409,7 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
         <div class="field"><label>Store</label><input id="buy-store" placeholder="Store"></div>
       </div>
       <div class="field"><label>Size (optional — powers the price-per-unit tracker)</label><input id="buy-size" placeholder="e.g. 19 oz"></div>
+      <label class="check-row"><input type="checkbox" id="buy-on-sale"> Bought on sale</label>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('buy-modal')">Cancel</button>
@@ -511,7 +524,7 @@ const FLOWS = {
   ordered:     [{to:'stocked', label:ico('check')+' Arrived'}]
 };
 const CATEGORIES = {
-  bath_body:'Bath & Body', makeup:'Makeup', household:'Household',
+  bath_body:'Bath & Body', makeup:'Makeup', skincare:'Skincare', household:'Household',
   food:'Food', health:'Health', pet:'Pet', other:'Other'
 };
 const THEMES = [
@@ -916,6 +929,7 @@ function openBuyModal(id){
   document.getElementById('buy-price').value = last?.price ?? firstStore?.price ?? '';
   document.getElementById('buy-store').value = last?.store ?? firstStore?.store ?? '';
   document.getElementById('buy-size').value = last?.size ?? p.size ?? '';
+  document.getElementById('buy-on-sale').checked = false;
   openModal('buy-modal');
 }
 function confirmBuy(){
@@ -924,7 +938,8 @@ function confirmBuy(){
   const price = document.getElementById('buy-price').value ? +document.getElementById('buy-price').value : null;
   const store = document.getElementById('buy-store').value.trim();
   const size = document.getElementById('buy-size').value.trim();
-  (p.purchases = p.purchases||[]).push({date, price, store, size});
+  const on_sale = document.getElementById('buy-on-sale').checked;
+  (p.purchases = p.purchases||[]).push({date, price, store, size, on_sale});
   p.status = 'stocked';
   p.snooze_until = null;
   closeModal('buy-modal');
@@ -958,6 +973,22 @@ function collectStores(){
     url: r.querySelector('.st-url').value.trim()
   })).filter(s => s.store || s.price || s.url);
 }
+function addSaleRow(store, when, notes){
+  const div = document.createElement('div');
+  div.className = 'sale-row';
+  div.innerHTML = `<input class="sl-store" placeholder="Store — e.g. Ulta" value="${esc(store||'')}">
+    <input class="sl-when" placeholder="When — e.g. July" value="${esc(when||'')}">
+    <input class="sl-notes" placeholder="Notes (optional)" value="${esc(notes||'')}">
+    <button class="store-x" type="button" onclick="this.parentElement.remove()" title="Remove">${ico('x')}</button>`;
+  document.getElementById('f-sales').appendChild(div);
+}
+function collectSalePatterns(){
+  return [...document.querySelectorAll('#f-sales .sale-row')].map(r => ({
+    store: r.querySelector('.sl-store').value.trim(),
+    when: r.querySelector('.sl-when').value.trim(),
+    notes: r.querySelector('.sl-notes').value.trim()
+  })).filter(s => s.store || s.when || s.notes);
+}
 function openAdd(){
   _editing = null;
   document.getElementById('pm-title').textContent = 'Add Product';
@@ -970,7 +1001,10 @@ function openAdd(){
   document.getElementById('f-watch').checked = false;
   document.getElementById('f-stores').innerHTML = '';
   addStoreRow();
+  document.getElementById('f-sales').innerHTML = '';
+  addSaleRow();
   document.getElementById('f-hist-date').value = today();
+  document.getElementById('f-hist-sale').checked = false;
   document.getElementById('f-phist').innerHTML = '<div class="phist-empty">Save the product first, then log purchases from its card.</div>';
   document.getElementById('f-predict-note').innerHTML = '';
   openModal('product-modal');
@@ -994,11 +1028,15 @@ function openEdit(id){
   document.getElementById('f-stores').innerHTML = '';
   (p.where_to_buy||[]).forEach(s => addStoreRow(s.store, s.price, s.url));
   if(!(p.where_to_buy||[]).length) addStoreRow();
+  document.getElementById('f-sales').innerHTML = '';
+  (p.sale_patterns||[]).forEach(s => addSaleRow(s.store, s.when, s.notes));
+  if(!(p.sale_patterns||[]).length) addSaleRow();
   document.getElementById('f-interval').value = p.interval_override_days ?? '';
   document.getElementById('f-hist-date').value = today();
   document.getElementById('f-hist-price').value = '';
   document.getElementById('f-hist-store').value = '';
   document.getElementById('f-hist-size').value = p.size||'';
+  document.getElementById('f-hist-sale').checked = false;
   renderPurchaseHistory(p);
   openModal('product-modal');
 }
@@ -1009,7 +1047,8 @@ function renderPurchaseHistory(p){
     const realIdx = (p.purchases||[]).indexOf(pu);
     const parsed = parseSize(pu.size || p.size);
     const unitBit = (parsed && pu.price) ? ` · $${(+pu.price/parsed.qty).toFixed(2)}/${esc(parsed.unit)}` : '';
-    return `<div class="phist-row"><span>${fmtDate(pu.date)}${pu.store?` · ${esc(pu.store)}`:''}${pu.price?` · $${(+pu.price).toFixed(2)}`:''}${pu.size?` · ${esc(pu.size)}`:''}${unitBit}</span>
+    const saleTag = pu.on_sale ? `<span class="sale-tag">${ico('check')} Sale</span>` : '';
+    return `<div class="phist-row"><span>${fmtDate(pu.date)}${pu.store?` · ${esc(pu.store)}`:''}${pu.price?` · $${(+pu.price).toFixed(2)}`:''}${pu.size?` · ${esc(pu.size)}`:''}${unitBit}${saleTag}</span>
       <button class="phist-x" type="button" onclick="deleteHistPurchase(${realIdx})" title="Remove">${ico('x')}</button></div>`;
   }).join('') : `<div class="phist-empty">No purchases logged yet — add one below, or tap ${ico('cart')} Bought it! on the card.</div>`;
   const note = document.getElementById('f-predict-note');
@@ -1032,10 +1071,12 @@ function addHistPurchase(){
   const price = document.getElementById('f-hist-price').value ? +document.getElementById('f-hist-price').value : null;
   const store = document.getElementById('f-hist-store').value.trim();
   const size = document.getElementById('f-hist-size').value.trim();
-  (p.purchases = p.purchases||[]).push({date, price, store, size});
+  const on_sale = document.getElementById('f-hist-sale').checked;
+  (p.purchases = p.purchases||[]).push({date, price, store, size, on_sale});
   document.getElementById('f-hist-price').value = '';
   document.getElementById('f-hist-store').value = '';
   document.getElementById('f-hist-size').value = '';
+  document.getElementById('f-hist-sale').checked = false;
   renderPurchaseHistory(p);
   saveToStorage(); render();
 }
@@ -1056,6 +1097,7 @@ function saveProduct(){
     status: document.getElementById('f-status').value,
     rating: document.getElementById('f-rating').value ? +document.getElementById('f-rating').value : null,
     where_to_buy: collectStores(),
+    sale_patterns: collectSalePatterns(),
     substitutes: document.getElementById('f-subs').value.trim(),
     notes: document.getElementById('f-notes').value.trim(),
     discontinued_watch: document.getElementById('f-watch').checked,
@@ -1114,6 +1156,7 @@ function runImport(){
   rows.forEach(r => P.push({
     id: nextId++, name: r.name, brand: r.brand, category, size: '',
     where_to_buy: r.store ? [{store: r.store, price: null, url: ''}] : [],
+    sale_patterns: [],
     status, purchases: [], interval_override_days: null, interval_adjust: 1, snooze_until: null,
     substitutes: '', rating: null, notes: '', discontinued_watch: false
   }));
