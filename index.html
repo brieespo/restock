@@ -354,8 +354,8 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
   <div class="modal">
     <div class="modal-head"><strong id="pm-title">Add Product</strong><button class="modal-x" data-ico="x" aria-label="Close" onclick="closeModal('product-modal')"></button></div>
     <div class="modal-body">
-      <div id="staple-name-wrap" class="field" style="display:none">
-        <label>Staple (the general need)</label><input id="f-staple-name" placeholder="e.g. Face wash">
+      <div id="staple-name-wrap" class="field">
+        <label>Staple (the general need — e.g. "Shampoo," "Trash bags")</label><input id="f-staple-name" placeholder="Leave blank to just use the product name below">
       </div>
       <div class="field-row">
         <div class="field"><label>Category</label><select id="f-category"></select></div>
@@ -392,6 +392,11 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
   <div class="modal" style="max-width:420px">
     <div class="modal-head"><strong id="buy-title">Bought it!</strong><button class="modal-x" data-ico="x" aria-label="Close" onclick="closeModal('buy-modal')"></button></div>
     <div class="modal-body">
+      <div class="field">
+        <label>Paste the product link and/or the title + price you copied</label>
+        <textarea id="buy-paste" rows="2" placeholder="e.g. a pasted Amazon/Target link, or the product title and price from the page" oninput="parseBuyPaste()"></textarea>
+        <div class="field-hint" id="buy-paste-hint"></div>
+      </div>
       <div class="field" id="buy-variant-wrap" style="display:none">
         <label>Which one?</label><select id="buy-variant" onchange="onBuyVariantChange()"></select>
       </div>
@@ -673,6 +678,44 @@ function shrinkChipHTML(p){
   return `<div class="shrink-chip" title="$${s.from.unitPrice.toFixed(2)}/${esc(s.unit)} on ${fmtDate(s.from.date)} → $${s.to.unitPrice.toFixed(2)}/${esc(s.unit)} on ${fmtDate(s.to.date)}">${ico('trendUp')} +${Math.round(s.pct*100)}%/${esc(s.unit)} since ${fmtDate(s.from.date)}</div>`;
 }
 
+// ---- PASTE-A-PURCHASE PARSER ----
+// No server, no scraping (CORS blocks fetching another site's page from a
+// static app, and Amazon in particular blocks the server-side proxies that
+// would otherwise get around that). Instead: the store comes from the
+// pasted link's own domain (instant, 100% reliable), and the name/price/
+// size come from whatever product text the user copied alongside it —
+// parsed locally, the same way the app already parses pasted note/import text.
+const STORE_DOMAINS = {
+  amazon:'Amazon', target:'Target', walmart:'Walmart', costco:'Costco', ulta:'Ulta',
+  sephora:'Sephora', cvs:'CVS', walgreens:'Walgreens', riteaid:'Rite Aid',
+  homedepot:'Home Depot', lowes:"Lowe's", bestbuy:'Best Buy', kroger:'Kroger',
+  wholefoods:'Whole Foods', samsclub:"Sam's Club", petco:'Petco', chewy:'Chewy',
+  ikea:'IKEA', instacart:'Instacart', etsy:'Etsy'
+};
+function storeFromUrl(url){
+  try{
+    const host = new URL(url).hostname.replace(/^www\./,'');
+    const label = host.split('.').slice(-2)[0];
+    if(STORE_DOMAINS[label]) return STORE_DOMAINS[label];
+    return label.charAt(0).toUpperCase()+label.slice(1);
+  }catch(e){ return null; }
+}
+function parsePurchasePaste(text){
+  text = String(text||'');
+  const urlMatch = text.match(/https?:\/\/\S+/);
+  const url = urlMatch ? urlMatch[0].replace(/[),.]+$/,'') : null;
+  const store = url ? storeFromUrl(url) : null;
+  const rest = text.replace(/https?:\/\/\S+/g,'').trim();
+  const priceMatch = rest.match(/\$\s?(\d+(?:\.\d{1,2})?)/);
+  const price = priceMatch ? +priceMatch[1] : null;
+  const sizeMatch = rest.match(/\b(\d+(?:\.\d+)?)\s?(fl\s?oz|oz|ml|liters?|l|lbs?|lb|g|kg|ct|count|pack|sheets?|rolls?)\b/i);
+  const size = sizeMatch ? `${sizeMatch[1]} ${sizeMatch[2].toLowerCase()}` : null;
+  const nameLine = rest.split('\n').map(l=>l.trim())
+    .filter(l => l && !/^\$\s?\d/.test(l))
+    .sort((a,b)=>b.length-a.length)[0] || null;
+  return {url, store, price, size, name: nameLine ? nameLine.slice(0,120) : null};
+}
+
 // ---- RENDER ----
 function filteredStaples(){
   const q = (document.getElementById('search-box').value||'').toLowerCase().trim();
@@ -878,7 +921,7 @@ function stapleCardHTML(staple){
         ${pr && pr.discontinued_watch?`<span class="watch-flag" title="Stock up when seen">${ico('alert')}</span>`:''}
       </div>
       <div class="pcard-name">${esc(staple.name)}</div>
-      ${pr && pr.brand?`<div class="pcard-brand">${esc(pr.brand)}</div>`:''}
+      ${pr && (pr.brand || (pr.name && pr.name!==staple.name)) ? `<div class="pcard-brand">${esc([pr.brand, pr.name!==staple.name?pr.name:''].filter(Boolean).join(' · '))}</div>` : ''}
       ${pr && (pr.size||pr.rating)?`<div class="pcard-meta">${[pr.size?esc(pr.size):'',pr.rating?`<span class="stars">${'★'.repeat(pr.rating)}</span>`:''].filter(Boolean).join(' · ')}</div>`:''}
       ${stores?`<div class="pcard-stores">${ico('cart')} ${stores}</div>`:''}
       ${onHandBit}
@@ -1041,6 +1084,8 @@ function openBuyModal(id){
   document.getElementById('buy-date').value = today();
   document.getElementById('buy-qty').value = 1;
   document.getElementById('buy-on-sale').checked = false;
+  document.getElementById('buy-paste').value = '';
+  document.getElementById('buy-paste-hint').textContent = '';
   openModal('buy-modal');
 }
 function onBuyVariantChange(){
@@ -1072,6 +1117,14 @@ function confirmBuy(){
   closeModal('buy-modal');
   saveToStorage(); render();
 }
+function parseBuyPaste(){
+  const parsed = parsePurchasePaste(document.getElementById('buy-paste').value);
+  const bits = [];
+  if(parsed.store){ document.getElementById('buy-store').value = parsed.store; bits.push(parsed.store); }
+  if(parsed.price != null){ document.getElementById('buy-price').value = parsed.price; bits.push('$'+parsed.price.toFixed(2)); }
+  if(parsed.size){ document.getElementById('buy-size').value = parsed.size; bits.push(parsed.size); }
+  document.getElementById('buy-paste-hint').textContent = bits.length ? `Detected: ${bits.join(' · ')}` : '';
+}
 function snoozeStaple(id){
   const s = stapleById(id); if(!s) return;
   s.snooze_until = addDays(today(), 14);
@@ -1095,6 +1148,11 @@ function variantBlockHTML(pr){
   const vid = pr ? String(pr.id) : 'new'+(_variantBlockSeq++);
   _blockData[vid] = { purchases: pr ? JSON.parse(JSON.stringify(pr.purchases||[])) : [], finishedPending: 0 };
   return `<div class="variant-block" data-vid="${vid}">
+    ${!pr ? `<div class="field">
+      <label>Paste the product link and/or the title + price you copied</label>
+      <textarea class="v-paste" rows="2" placeholder="e.g. a pasted Amazon/Target link, or the product title and price from the page" oninput="parseVariantPaste(this)"></textarea>
+      <div class="field-hint v-paste-hint"></div>
+    </div>` : ''}
     <div class="field-row">
       <div class="field"><label>Product name</label><input class="v-name" value="${esc(pr?.name||'')}" placeholder="e.g. Hydrating Facial Cleanser"></div>
       <div class="field"><label>Brand</label><input class="v-brand" value="${esc(pr?.brand||'')}" placeholder="e.g. CeraVe"></div>
@@ -1147,6 +1205,26 @@ function collectStoresFrom(block){
     price: r.querySelector('.st-price').value ? +r.querySelector('.st-price').value : null,
     url: r.querySelector('.st-url').value.trim()
   })).filter(s => s.store || s.price || s.url);
+}
+function parseVariantPaste(el){
+  const block = el.closest('.variant-block');
+  const parsed = parsePurchasePaste(el.value);
+  const bits = [];
+  if(parsed.name){ block.querySelector('.v-name').value = parsed.name; bits.push(parsed.name); }
+  if(parsed.size){ block.querySelector('.v-size').value = parsed.size; bits.push(parsed.size); }
+  if(parsed.store){
+    let row = block.querySelector('.v-stores .store-row');
+    if(!row){ addStoreRowTo(block); row = block.querySelector('.v-stores .store-row'); }
+    row.querySelector('.st-store').value = parsed.store;
+    bits.push(parsed.store);
+  }
+  if(parsed.price != null){
+    let row = block.querySelector('.v-stores .store-row');
+    if(!row){ addStoreRowTo(block); row = block.querySelector('.v-stores .store-row'); }
+    row.querySelector('.st-price').value = parsed.price;
+    bits.push('$'+parsed.price.toFixed(2));
+  }
+  block.querySelector('.v-paste-hint').textContent = bits.length ? `Detected: ${bits.join(' · ')}` : '';
 }
 function addSaleRowTo(el, store, when, notes){
   const block = el.classList.contains('variant-block') ? el : el.closest('.variant-block');
@@ -1203,7 +1281,6 @@ function finishOneInForm(vid){
   _blockData[vid].finishedPending = (_blockData[vid].finishedPending||0) + 1;
 }
 function addVariantClicked(){
-  document.getElementById('staple-name-wrap').style.display = '';
   const nameField = document.getElementById('f-staple-name');
   if(!nameField.value.trim()){
     const firstBlock = document.querySelector('.variant-block');
@@ -1263,7 +1340,6 @@ function openAdd(){
   document.getElementById('f-subs').value = '';
   document.getElementById('f-interval').value = '';
   document.getElementById('f-staple-name').value = '';
-  document.getElementById('staple-name-wrap').style.display = 'none';
   _blockData = {}; _variantBlockSeq = 1;
   const wrap = document.getElementById('variants-wrap');
   wrap.innerHTML = variantBlockHTML(null);
@@ -1286,7 +1362,6 @@ function openEdit(id){
   document.getElementById('f-interval').value = s.interval_override_days ?? '';
   const products = stapleProducts(s.id);
   document.getElementById('f-staple-name').value = s.name||'';
-  document.getElementById('staple-name-wrap').style.display = products.length > 1 ? '' : 'none';
   _blockData = {}; _variantBlockSeq = 1;
   const wrap = document.getElementById('variants-wrap');
   wrap.innerHTML = '';
@@ -1312,10 +1387,9 @@ function saveStaple(){
   const blocks = [...document.querySelectorAll('.variant-block')];
   if(!blocks.length){ alert('Add at least one product.'); return; }
   if(blocks.some(b => !b.querySelector('.v-name').value.trim())){ alert('Give every variant a product name.'); return; }
-  const multi = blocks.length > 1;
   const firstName = blocks[0].querySelector('.v-name').value.trim();
   const stapleVals = {
-    name: multi ? (document.getElementById('f-staple-name').value.trim() || firstName) : firstName,
+    name: document.getElementById('f-staple-name').value.trim() || firstName,
     category: document.getElementById('f-category').value,
     status: document.getElementById('f-status').value,
     substitutes: document.getElementById('f-subs').value.trim(),
