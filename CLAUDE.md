@@ -31,37 +31,61 @@ Dinner-planner pattern: one row per user in `restock_data` with jsonb columns:
 
 | column | contents |
 |---|---|
-| products | array of product objects (below) |
+| staples | array of staple objects (below) — the general need |
+| products | array of product objects (below) — brand/size-specific variants of a staple |
 | settings | category list, store list, snooze defaults, theme |
 
-### Product object
+**Two-level model.** A staple is the thing you need — "Face wash," "Paper towels," "Coffee beans." A product is a specific brand/size you've actually bought for it — CeraVe vs. Cetaphil face wash — linked back via `staple_id`. Status, the radar, predicted run-out, and snooze all live on the **staple**, because "do I need to buy face wash" doesn't care which brand; the interval engine pools purchases (and finish events) across every variant of a staple. Brand, price, rating, notes, on-hand count, and purchase history stay on the **product**, because "which one is actually good" is a per-variant question.
+
+A staple with exactly one variant is displayed and edited exactly like a single flat product — the two-level structure is invisible until a second brand gets added (via "Track another brand for this" on the edit screen), at which point the staple's own name becomes an editable field and a **brand comparison** table appears.
+
+### Staple object
 
 ```js
 {
   id: 1,
-  name: "Daily Moisturizing Lotion",
+  name: "Face wash",             // the general need; for a single-variant staple this mirrors the product's name
+  category: "skincare",          // bath_body | makeup | skincare | household | food | health | pet | other (user-extendable)
+  status: "stocked",             // 'stocked' | 'running_low' | 'out' | 'ordered'
+  substitutes: "Cetaphil in a pinch",  // acceptable backup when nothing you track is available
+  interval_override_days: null,  // manual interval if desired; otherwise computed from pooled purchases
+  interval_adjust: 1,            // snooze-feedback multiplier on the computed interval
+  snooze_until: null             // date string or null
+}
+```
+
+### Product object (a variant of a staple)
+
+```js
+{
+  id: 10,
+  staple_id: 1,
+  name: "Hydrating Facial Cleanser",
   brand: "CeraVe",
-  category: "bath_body",        // bath_body | makeup | household | food | health | pet | other (user-extendable)
-  size: "19 oz",
-  where_to_buy: [{store: "Costco", price: 11.49, url: ""}],  // multiple stores, price per store
-  status: "stocked",            // 'stocked' | 'running_low' | 'out' | 'ordered'
-  purchases: [                   // the heart of the app — every purchase logged
-    {date: "2026-05-02", price: 11.49, store: "Costco", size: "19 oz"}
+  size: "16 oz",
+  where_to_buy: [{store: "Costco", price: 11.49, url: ""}],   // multiple stores, price per store
+  sale_patterns: [{store: "Ulta", when: "July", notes: "20% off"}],  // routinely-on-sale notes
+  rating: null, notes: "",        // catalog job: why this one, shade names, dupes tried
+  discontinued_watch: false,      // stock up whenever seen (this specific formula being phased out)
+  on_hand: 3,                     // units currently on hand
+  purchases: [                    // every purchase logged, on_sale flags an on-sale buy
+    {date: "2026-05-02", price: 11.49, store: "Costco", size: "16 oz", on_sale: false}
   ],
-  interval_override_days: null, // manual interval if desired; otherwise computed
-  substitutes: "Cetaphil in a pinch",  // acceptable backup when the real one is unavailable
-  rating: null, notes: "",      // catalog job: why this one, shade names, dupes tried
-  discontinued_watch: false     // stock up whenever seen (for products being phased out)
+  finished_events: [              // one entry per "Finished one" tap — the usage-rate signal
+    {date: "2026-06-01"}
+  ]
 }
 ```
 
 ### The interval engine (computed, the app's requirements-engine equivalent)
 
-- With 2+ purchases: predicted run-out = last purchase date + **median** gap between purchases. The app learns the real pace; no manual guessing.
-- With 1 purchase (or by preference): `interval_override_days`.
-- A product surfaces on the radar when *either* signal fires, and the UI distinguishes them: "you marked this low" vs. "you usually rebuy around now."
+- **Purchase-gap pace (fallback signal).** With 2+ purchases pooled across all of a staple's variants: predicted run-out = last purchase date + **median** gap between purchases. With fewer: `interval_override_days`. This is the same signal as before the two-level split, just pooled across brands.
+- **Stock-aware depletion (primary signal once on-hand is in use).** Once any variant has `on_hand >= 1`, predicted run-out becomes *today + (usage rate × total units on hand)* — "covered until ~date" — instead of a pace guess. Usage rate is the median gap between **finished events** (pooled across variants), falling back to the purchase-gap pace when there isn't enough finish history yet. This means a staple with backups on the shelf goes quiet on the radar and only resurfaces as it actually nears zero; a staple that's never had on-hand tracked behaves exactly like the old date-only engine (no regression).
+- A staple surfaces on the radar when *either* signal fires, and the UI distinguishes them: "you marked this low" vs. "covered until ~date" vs. "you usually rebuy around now."
 - **Feedback loop:** "still fine, snooze 2 weeks" stretches the interval estimate slightly; "ran out early" shrinks it. Accuracy improves with normal use, including lazy use.
-- **"Bought it" is one tap** — today's date, last price/store/size prefilled, editable. Frictionless logging is non-negotiable; it is the lesson of every abandoned spreadsheet.
+- **"Bought it" is one tap** — asks which variant if a staple has more than one (defaulting to whichever was purchased most recently), logs today's date and a quantity (default 1, editable) that adds to that variant's `on_hand`, with price/store/size prefilled from its last purchase. Frictionless logging is non-negotiable; it is the lesson of every abandoned spreadsheet.
+- **"Finished one" is the inventory counterpart** — one tap on a specific variant decrements `on_hand` (floor zero) and logs a `finished_events` entry, feeding the usage-rate calculation above.
+- **Brand comparison** (shown once a staple has 2+ variants): unit price, rating, and average purchase gap (longevity) computed per variant, so "which one's actually winning" has an answer.
 
 ## Screens
 

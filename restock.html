@@ -191,6 +191,13 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
 .phist-x:hover{color:var(--out)}
 .phist-empty{padding:.6rem .7rem;font-size:.82rem;color:var(--muted)}
 .field-hint{font-size:.8rem;color:var(--muted);margin:-.3rem 0 .5rem}
+/* Staples & variants */
+.variant-block{border:1.5px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1rem;background:var(--bg)}
+.pcard-onhand{font-size:.8rem;color:var(--muted);font-weight:600}
+.bc-table{border:1px solid var(--border);border-radius:9px;overflow:hidden;font-size:.83rem}
+.bc-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:.5rem;padding:.5rem .7rem;border-bottom:1px solid var(--border);align-items:center}
+.bc-row:last-child{border-bottom:none}
+.bc-head{background:var(--accent-light);font-weight:700;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
 .predict-note{font-size:.82rem;color:var(--text);background:var(--predicted-bg);border-radius:8px;padding:.55rem .75rem;margin:.6rem 0}
 .predict-note strong{color:var(--predicted)}
 /* Import preview */
@@ -241,6 +248,8 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
   #search-box{max-width:none;width:100%;margin-left:0}
   .field-row{flex-direction:column;gap:0}
   .store-row .st-url{display:none}
+  .bc-row{grid-template-columns:1.5fr 1fr 1fr;font-size:.78rem}
+  .bc-row span:nth-child(4){display:none}
 }
 </style>
 <script>try{const t=localStorage.getItem('rs-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
@@ -345,15 +354,11 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
   <div class="modal">
     <div class="modal-head"><strong id="pm-title">Add Product</strong><button class="modal-x" data-ico="x" aria-label="Close" onclick="closeModal('product-modal')"></button></div>
     <div class="modal-body">
-      <div class="field-row">
-        <div class="field"><label>Product *</label><input id="f-name" placeholder="e.g. Daily Moisturizing Lotion"></div>
-        <div class="field"><label>Brand</label><input id="f-brand" placeholder="e.g. CeraVe"></div>
+      <div id="staple-name-wrap" class="field" style="display:none">
+        <label>Staple (the general need)</label><input id="f-staple-name" placeholder="e.g. Face wash">
       </div>
       <div class="field-row">
         <div class="field"><label>Category</label><select id="f-category"></select></div>
-        <div class="field"><label>Size</label><input id="f-size" placeholder="e.g. 19 oz"></div>
-      </div>
-      <div class="field-row">
         <div class="field"><label>Status</label>
           <select id="f-status">
             <option value="stocked">Stocked</option>
@@ -362,38 +367,22 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
             <option value="ordered">Ordered</option>
           </select>
         </div>
-        <div class="field"><label>Rating</label>
-          <select id="f-rating"><option value="">—</option><option value="1">★</option><option value="2">★★</option><option value="3">★★★</option><option value="4">★★★★</option><option value="5">★★★★★</option></select>
-        </div>
       </div>
-      <div class="form-sec">Where to buy</div>
-      <div id="f-stores"></div>
-      <button class="btn btn-ghost" type="button" onclick="addStoreRow()">＋ Add store</button>
-      <div class="form-sec">Sale patterns</div>
-      <div class="field-hint">Where and when this routinely goes on sale — e.g. Ulta, July.</div>
-      <div id="f-sales"></div>
-      <button class="btn btn-ghost" type="button" onclick="addSaleRow()">＋ Add sale pattern</button>
-      <div class="form-sec">Purchase history &amp; rebuy pace</div>
-      <div class="field"><label>Rebuy every ~ how many days? (used until 2+ purchases are logged)</label><input id="f-interval" type="number" min="1" placeholder="e.g. 30"></div>
-      <div id="f-predict-note"></div>
-      <div id="f-phist"></div>
-      <div class="field-row" style="margin-top:.6rem">
-        <div class="field"><label>Add a past purchase — date</label><input id="f-hist-date" type="date"></div>
-        <div class="field"><label>Price</label><input id="f-hist-price" type="number" step="0.01" min="0" placeholder="$"></div>
-        <div class="field"><label>Store</label><input id="f-hist-store" placeholder="Store"></div>
-        <div class="field"><label>Size</label><input id="f-hist-size" placeholder="e.g. 19 oz"></div>
-      </div>
-      <label class="check-row" style="margin-bottom:.6rem"><input type="checkbox" id="f-hist-sale"> Bought on sale</label>
-      <button class="btn btn-ghost" type="button" onclick="addHistPurchase()">＋ Add to history</button>
-      <div class="form-sec">Catalog notes</div>
       <div class="field"><label>Acceptable substitute</label><input id="f-subs" placeholder="e.g. Cetaphil in a pinch"></div>
-      <div class="field"><label>Notes (why this one, shade names…)</label><textarea id="f-notes"></textarea></div>
-      <div class="field"><label class="check-row"><input type="checkbox" id="f-watch"> Stock up when seen — being discontinued</label></div>
+      <div class="field"><label>Rebuy every ~ how many days? (used until 2+ purchases are logged, pooled across variants)</label><input id="f-interval" type="number" min="1" placeholder="e.g. 30"></div>
+
+      <div id="variants-wrap"></div>
+      <button class="btn btn-ghost" type="button" onclick="addVariantClicked()">＋ Track another brand for this</button>
+
+      <div id="brand-compare-wrap" style="display:none">
+        <div class="form-sec">Brand comparison</div>
+        <div id="brand-compare"></div>
+      </div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-danger" id="pm-delete" style="margin-right:auto" onclick="deleteProduct()">Delete</button>
+      <button class="btn btn-danger" id="pm-delete" style="margin-right:auto" onclick="deleteStaple()">Delete</button>
       <button class="btn btn-ghost" onclick="closeModal('product-modal')">Cancel</button>
-      <button class="btn btn-accent" onclick="saveProduct()">Save</button>
+      <button class="btn btn-accent" onclick="saveStaple()">Save</button>
     </div>
   </div>
 </div>
@@ -403,7 +392,13 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
   <div class="modal" style="max-width:420px">
     <div class="modal-head"><strong id="buy-title">Bought it!</strong><button class="modal-x" data-ico="x" aria-label="Close" onclick="closeModal('buy-modal')"></button></div>
     <div class="modal-body">
-      <div class="field"><label>Date</label><input id="buy-date" type="date"></div>
+      <div class="field" id="buy-variant-wrap" style="display:none">
+        <label>Which one?</label><select id="buy-variant" onchange="onBuyVariantChange()"></select>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Date</label><input id="buy-date" type="date"></div>
+        <div class="field"><label>Quantity</label><input id="buy-qty" type="number" min="1" step="1" value="1"></div>
+      </div>
       <div class="field-row">
         <div class="field"><label>Price</label><input id="buy-price" type="number" step="0.01" min="0" placeholder="$"></div>
         <div class="field"><label>Store</label><input id="buy-store" placeholder="Store"></div>
@@ -459,26 +454,30 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
   <div class="modal" style="max-width:640px">
     <div class="modal-head"><strong>How To Use</strong><button class="modal-x" data-ico="x" aria-label="Close" onclick="closeModal('help-modal')"></button></div>
     <div class="modal-body">
-      <div class="help-section"><h3>One catalog, four statuses</h3>
-        <p>Every product you use and rebuy lives here — with its brand, where to buy it, and the price. Status is one tap from the card: <strong>Stocked → Running low → Out → Ordered → back to Stocked</strong>. Standing in the bathroom noticing the lotion's almost gone? One tap and future-you remembers.</p></div>
+      <div class="help-section"><h3>Staples &amp; variants</h3>
+        <p>Every need you track is a <strong>staple</strong> — "Face wash," "Paper towels" — and each brand/size you actually buy for it is a <strong>variant</strong> underneath. Track just one brand and it looks and behaves exactly like a plain product. Tap <strong>＋ Track another brand for this</strong> to add a second variant — that's when the staple gets its own name field and a <strong>brand comparison</strong> table (unit price, rating, average time between purchases) appears so you can see which one's actually winning.</p></div>
+      <div class="help-section"><h3>Four statuses, one tap</h3>
+        <p>Status lives on the staple, not any one brand: <strong>Stocked → Running low → Out → Ordered → back to Stocked</strong>. Standing in the bathroom noticing it's almost gone? One tap and future-you remembers.</p></div>
       <div class="help-section"><h3>Category tabs &amp; search</h3>
-        <p>Tabs split the catalog by category; search covers names, brands, stores, and notes. The <strong>Needs attention</strong> filter shows everything that's low, out, or on order.</p></div>
+        <p>Tabs split the catalog by category; search covers staple names, every variant's brand and notes, and stores. The <strong>Needs attention</strong> filter shows everything that's low, out, or on order.</p></div>
       <div class="help-section"><h3>Paste a list</h3>
-        <p>The fastest way in: <strong>More → Paste a list</strong>, one product per line as "Brand – Product – Store" (a plain product name works too). Import, then fix details on any card whenever.</p></div>
+        <p>The fastest way in: <strong>More → Paste a list</strong>, one product per line as "Brand – Product – Store" (a plain product name works too). Each line becomes its own staple with one variant. Import, then fix details on any card whenever.</p></div>
+      <div class="help-section"><h3>On-hand &amp; Finished one</h3>
+        <p>Each variant can track how many you have <strong>on hand</strong>. Tapping <strong>Bought it!</strong> adds to it (quantity is editable, defaults to 1); tapping <strong>Finished one</strong> subtracts one and logs the date. The staple card shows the total on hand across every variant.</p></div>
       <div class="help-section"><h3>Discontinued watch</h3>
-        <p>Flag a product when it's being phased out. Flagged products get their own standing <strong>Discontinued watch</strong> panel on Home — not buried in the catalog — so "stock up if you see it" stays visible until you tap <strong>Bought it!</strong> or <strong>Stop watching</strong>.</p></div>
+        <p>Flag a specific variant when it's being phased out. Flagged variants get their own standing <strong>Discontinued watch</strong> panel on Home — not buried in the catalog — so "stock up if you see it" stays visible until you tap <strong>Bought it!</strong> or <strong>Stop watching</strong>.</p></div>
       <div class="help-section"><h3>Your rebuying profile</h3>
         <p>The italic line at the top of Home reads your own data back to you — which brands you're loyal to, how many products you rebuy a month, and which store wins on price most often. It's rule-based (no guessing), sharpens as you log more purchases, and stays quiet until there's real data behind it.</p></div>
       <div class="help-section"><h3>Bought it! &amp; the rebuy prediction</h3>
-        <p>Tap <strong>Bought it!</strong> any time you restock something — it logs today's date (editable), prefills the last price/store, and marks the product Stocked. Once a product has <strong>2+ logged purchases</strong>, Restock learns your real rebuy pace (the median gap between purchases) and predicts when you'll need it again — no manual guessing. With just one purchase, set a rough "rebuy every ~N days" estimate on the product's edit screen until the real pattern emerges.</p></div>
-      <div class="help-section"><h3>Predicted due soon</h3>
-        <p>Products nearing their predicted rebuy date surface in their own <strong>Predicted due soon</strong> panel — even if you never marked them low. This is a separate signal from status: "you marked this low" and "you usually rebuy around now" are shown distinctly. Tap <strong>Bought it!</strong> if it's time, or <strong>Still fine, +2wk</strong> to snooze it — snoozing gently widens the prediction so the radar gets quieter and more accurate the more you use it. Marking something Out earlier than predicted does the opposite, tightening the estimate.</p></div>
+        <p>Tap <strong>Bought it!</strong> any time you restock something — if a staple has more than one variant it'll ask which (defaulting to whichever you bought most recently), then logs today's date and quantity (both editable), prefills the last price/store, and marks the staple Stocked. Once a staple has <strong>2+ logged purchases pooled across its variants</strong>, Restock learns your real rebuy pace and predicts when you'll need it again. With just one purchase, set a rough "rebuy every ~N days" estimate on the edit screen until the real pattern emerges.</p></div>
+      <div class="help-section"><h3>Predicted due soon — now stock-aware</h3>
+        <p>Once you're logging on-hand quantities and the occasional <strong>Finished one</strong>, the prediction upgrades: it multiplies your usage rate (median days between finishes) by how many units you have left, so a staple with backups shows <strong>"covered until ~date"</strong> and only surfaces as it actually nears zero. Without enough on-hand/finish data yet, it falls back to the plain rebuy-pace date — "you usually rebuy around now." Either way it's a signal separate from status. Tap <strong>Bought it!</strong> if it's time, or <strong>Still fine, +2wk</strong> to snooze it — snoozing gently widens the prediction so the radar gets quieter and more accurate the more you use it. Marking something Out earlier than predicted does the opposite, tightening the estimate.</p></div>
       <div class="help-section"><h3>Shopping mode</h3>
         <p>The <strong>Shopping</strong> tab groups everything you currently need — running low, out, on order, or due soon — by store, checklist style, with an estimated total per store. Check items off as you grab them, then tap <strong>Mark checked as bought</strong> to log all of them as purchased at once (today's date, that store, listed price) — the fastest way to feed the interval engine.</p></div>
       <div class="help-section"><h3>Restock rhythm</h3>
         <p>The heat-strip at the top of Shopping mode previews predicted run-outs over the <strong>next 8 weeks</strong> — a quiet week or two, then a cluster lighting up together, is your "big Costco run" signal. Tap a week to see exactly what's predicted to run out then.</p></div>
       <div class="help-section"><h3>Price watch &amp; shrinkflation</h3>
-        <p>Add a <strong>size</strong> when logging a purchase (e.g. "19 oz") and Restock tracks price-per-unit over time. Once the same size has been bought at meaningfully different times, a noticeable jump (8%+) surfaces as a <strong>Price watch</strong> panel on Home and a chip on the product — the kind of creeping cost nobody notices without the data.</p></div>
+        <p>Add a <strong>size</strong> when logging a purchase (e.g. "19 oz") and Restock tracks price-per-unit over time for that variant. Once the same size has been bought at meaningfully different times, a noticeable jump (8%+) surfaces as a <strong>Price watch</strong> panel on Home and a chip on the card — the kind of creeping cost nobody notices without the data.</p></div>
       <div class="help-section"><h3>Coming soon</h3>
         <p>Restock will pick up hub theming once your personal hub site exists to link it from.</p></div>
     </div>
@@ -537,54 +536,102 @@ const THEMES = [
 ];
 
 // ---- STATE ----
-let P = [];          // products
+// Two-level model: staples are the general need ("Face wash"); products are
+// brand/size-specific variants belonging to a staple via staple_id. Status,
+// snooze, and the predicted-runout engine live on the staple; brand, price,
+// rating, notes, on-hand, and purchase/finished history live on the product.
+let S = [];           // staples
+let PR = [];          // products (variants)
 let SETTINGS = {};
 let nextId = 1;
 let _tab = 'all';
-let _editing = null;
+let _editing = null;   // staple id open in product-modal
 
 // ---- HELPERS ----
 const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const byId = id => P.find(x => x.id === id);
+const stapleById = id => S.find(x => x.id === id);
+const byId = id => PR.find(x => x.id === id);          // product/variant lookup
+const stapleProducts = stapleId => PR.filter(pr => pr.staple_id === stapleId);
 const today = () => new Date().toISOString().slice(0,10);
 function safeUrl(u){ u = String(u||'').trim(); if(!u) return ''; return /^https?:\/\//i.test(u) ? u : 'https://'+u; }
 function fmtDate(d){ if(!d) return ''; const [y,m,day] = d.split('-'); return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1]} ${+day}`; }
+function defaultVariantFor(staple){
+  const products = stapleProducts(staple.id);
+  if(products.length <= 1) return products[0] || null;
+  let best = null, bestDate = null;
+  products.forEach(pr => {
+    const last = lastPurchaseDate(pr);
+    if(last && (!bestDate || last > bestDate)){ bestDate = last; best = pr; }
+  });
+  return best || products[0];
+}
 
 // ---- INTERVAL ENGINE ----
+// Predicted run-out is computed at the STAPLE level, pooling purchases (and,
+// for the stock-aware path, finished-events) across all of a staple's variants.
 function addDays(dateStr, n){ const d = new Date(dateStr+'T00:00:00'); d.setDate(d.getDate()+Math.round(n)); return d.toISOString().slice(0,10); }
 function daysUntil(dateStr){ if(!dateStr) return null; return Math.round((new Date(dateStr+'T00:00:00') - new Date(today()+'T00:00:00')) / 86400000); }
 function dayDiff(a, b){ return Math.round((new Date(b+'T00:00:00') - new Date(a+'T00:00:00')) / 86400000); }
-function medianGap(purchases){
-  const dates = [...new Set(purchases.map(x=>x.date).filter(Boolean))].sort();
-  if(dates.length < 2) return null;
+function medianGapFromDates(dates){
+  const uniq = [...new Set(dates.filter(Boolean))].sort();
+  if(uniq.length < 2) return null;
   const gaps = [];
-  for(let i=1;i<dates.length;i++) gaps.push(dayDiff(dates[i-1], dates[i]));
+  for(let i=1;i<uniq.length;i++) gaps.push(dayDiff(uniq[i-1], uniq[i]));
   gaps.sort((a,b)=>a-b);
   const mid = Math.floor(gaps.length/2);
   return gaps.length % 2 ? gaps[mid] : (gaps[mid-1]+gaps[mid])/2;
 }
+function medianGap(purchases){ return medianGapFromDates(purchases.map(x=>x.date)); }
 function lastPurchaseDate(p){
   const dates = (p.purchases||[]).map(x=>x.date).filter(Boolean).sort();
   return dates.length ? dates[dates.length-1] : null;
 }
-function baseIntervalDays(p){
-  const purchases = p.purchases||[];
+function pooledPurchases(staple){ return stapleProducts(staple.id).flatMap(pr => pr.purchases||[]); }
+function lastPurchaseDateForStaple(staple){
+  const dates = pooledPurchases(staple).map(x=>x.date).filter(Boolean).sort();
+  return dates.length ? dates[dates.length-1] : null;
+}
+function stapleBaseIntervalDays(staple){
+  const purchases = pooledPurchases(staple);
   if(purchases.length >= 2) return medianGap(purchases);
-  return p.interval_override_days || null;
+  return staple.interval_override_days || null;
 }
-function effectiveIntervalDays(p){
-  const base = baseIntervalDays(p);
-  return base == null ? null : base * (p.interval_adjust ?? 1);
+function stapleEffectiveIntervalDays(staple){
+  const base = stapleBaseIntervalDays(staple);
+  return base == null ? null : base * (staple.interval_adjust ?? 1);
 }
-function predictedRunout(p){
-  const last = lastPurchaseDate(p);
-  const interval = effectiveIntervalDays(p);
+function staplePacePredictedRunout(staple){
+  const last = lastPurchaseDateForStaple(staple);
+  const interval = stapleEffectiveIntervalDays(staple);
   return (!last || interval == null) ? null : addDays(last, interval);
 }
-function isSnoozed(p){ return !!(p.snooze_until && daysUntil(p.snooze_until) > 0); }
-function isPredictedDue(p){
-  if(p.status !== 'stocked' || isSnoozed(p)) return false;
-  const run = predictedRunout(p);
+function totalOnHand(staple){
+  return stapleProducts(staple.id).reduce((s,pr) => s + (pr.on_hand||0), 0);
+}
+function usageRateDays(staple){
+  // Primary signal: median gap between "Finished one" taps across all variants.
+  // Falls back to the purchase-gap interval when there isn't enough finish history yet.
+  const finished = stapleProducts(staple.id).flatMap(pr => (pr.finished_events||[]).map(f=>f.date));
+  const fromFinished = medianGapFromDates(finished);
+  return fromFinished != null ? fromFinished : stapleBaseIntervalDays(staple);
+}
+function predictionKind(staple){
+  const onHand = totalOnHand(staple), usage = usageRateDays(staple);
+  if(onHand >= 1 && usage != null) return 'stock';
+  return staplePacePredictedRunout(staple) != null ? 'pace' : null;
+}
+function predictedRunout(staple){
+  // Stock-aware: covered until (usage rate x units on hand). Only kicks in once
+  // on-hand tracking is actually in use, so a fresh migration behaves exactly
+  // like the old date-only engine until the user starts logging quantities.
+  const onHand = totalOnHand(staple), usage = usageRateDays(staple);
+  if(onHand >= 1 && usage != null) return addDays(today(), usage * onHand);
+  return staplePacePredictedRunout(staple);
+}
+function isSnoozed(staple){ return !!(staple.snooze_until && daysUntil(staple.snooze_until) > 0); }
+function isPredictedDue(staple){
+  if(staple.status !== 'stocked' || isSnoozed(staple)) return false;
+  const run = predictedRunout(staple);
   return run != null && daysUntil(run) <= 14;
 }
 
@@ -627,56 +674,67 @@ function shrinkChipHTML(p){
 }
 
 // ---- RENDER ----
-function filtered(){
+function filteredStaples(){
   const q = (document.getElementById('search-box').value||'').toLowerCase().trim();
   const sf = document.getElementById('status-filter').value;
-  return P.filter(p => {
-    if(_tab !== 'all' && p.category !== _tab) return false;
-    if(sf === 'attention'){ if(p.status === 'stocked') return false; }
-    else if(sf && p.status !== sf) return false;
+  return S.filter(s => {
+    if(_tab !== 'all' && s.category !== _tab) return false;
+    if(sf === 'attention'){ if(s.status === 'stocked') return false; }
+    else if(sf && s.status !== sf) return false;
     if(q){
-      const hay = [p.name, p.brand, CATEGORIES[p.category]||p.category, p.substitutes, p.notes,
-        ...(p.where_to_buy||[]).map(s => s.store)].join(' ').toLowerCase();
+      const products = stapleProducts(s.id);
+      const hay = [s.name, CATEGORIES[s.category]||s.category, s.substitutes,
+        ...products.flatMap(pr => [pr.name, pr.brand, pr.notes, ...(pr.where_to_buy||[]).map(w=>w.store)])
+      ].join(' ').toLowerCase();
       if(!hay.includes(q)) return false;
     }
     return true;
-  }).sort((a,b) => (a.brand||'').localeCompare(b.brand||'') || a.name.localeCompare(b.name));
+  }).sort((a,b) => a.name.localeCompare(b.name));
 }
-function storeHint(p){
-  const s = (p.where_to_buy||[])[0];
+function storeHintStaple(staple){
+  const pr = defaultVariantFor(staple);
+  const s = pr && (pr.where_to_buy||[])[0];
   return s && s.store ? ` <span class="sp-store">· ${esc(s.store)}${s.price ? ' $'+(+s.price).toFixed(2) : ''}</span>` : '';
 }
-function spItem(p){
-  return `<div class="sp-item" onclick="openEdit(${p.id})">
-    <div class="sp-info"><strong>${esc(p.name)}</strong>${p.brand?` <span class="sp-brand">${esc(p.brand)}</span>`:''}${storeHint(p)}</div>
-    <div class="sp-actions">${(FLOWS[p.status]||[]).map(f =>
-      `<button class="flow-btn" onclick="event.stopPropagation();setStatus(${p.id},'${f.to}')">${f.label}</button>`).join('')}</div>
+function stapleBrandsSummary(products){
+  const brands = [...new Set(products.map(pr=>pr.brand).filter(Boolean))];
+  if(!brands.length) return '';
+  if(brands.length <= 2) return brands.join(' · ');
+  return `${brands[0]} · ${brands[1]} +${brands.length-2} more`;
+}
+function spItem(s){
+  return `<div class="sp-item" onclick="openEdit(${s.id})">
+    <div class="sp-info"><strong>${esc(s.name)}</strong>${storeHintStaple(s)}</div>
+    <div class="sp-actions">${(FLOWS[s.status]||[]).map(f =>
+      `<button class="flow-btn" onclick="event.stopPropagation();setStatus(${s.id},'${f.to}')">${f.label}</button>`).join('')}</div>
   </div>`;
 }
-function spPredictedItem(p){
-  const run = predictedRunout(p);
+function spPredictedItem(s){
+  const run = predictedRunout(s);
   const days = daysUntil(run);
   const when = days <= 0 ? 'due now' : days === 1 ? 'due tomorrow' : `due in ${days} days`;
-  return `<div class="sp-item" onclick="openEdit(${p.id})">
-    <div class="sp-info"><strong>${esc(p.name)}</strong>${p.brand?` <span class="sp-brand">${esc(p.brand)}</span>`:''}${storeHint(p)}
-      <div class="sp-note">${ico('clock')} you usually rebuy around now — ${when} (${fmtDate(run)})</div>
+  const kind = predictionKind(s);
+  const label = kind === 'stock' ? `covered until ~${fmtDate(run)} at your usage rate` : `you usually rebuy around now — ${when} (${fmtDate(run)})`;
+  return `<div class="sp-item" onclick="openEdit(${s.id})">
+    <div class="sp-info"><strong>${esc(s.name)}</strong>${storeHintStaple(s)}
+      <div class="sp-note">${ico(kind==='stock'?'package':'clock')} ${label}</div>
     </div>
     <div class="sp-actions">
-      <button class="buy-btn" onclick="event.stopPropagation();openBuyModal(${p.id})">${ico('cart')} Bought it!</button>
-      <button class="snooze-btn" onclick="event.stopPropagation();snoozeProduct(${p.id})">${ico('moon')} Still fine, +2wk</button>
+      <button class="buy-btn" onclick="event.stopPropagation();openBuyModal(${s.id})">${ico('cart')} Bought it!</button>
+      <button class="snooze-btn" onclick="event.stopPropagation();snoozeStaple(${s.id})">${ico('moon')} Still fine, +2wk</button>
     </div>
   </div>`;
 }
 // ---- REBUYING PROFILE LINE ----
-function totalPurchaseCount(){ return P.reduce((s,p) => s + (p.purchases||[]).length, 0); }
+function totalPurchaseCount(){ return PR.reduce((s,p) => s + (p.purchases||[]).length, 0); }
 function earliestPurchaseDate(){
   let earliest = null;
-  P.forEach(p => (p.purchases||[]).forEach(pu => { if(pu.date && (!earliest || pu.date < earliest)) earliest = pu.date; }));
+  PR.forEach(p => (p.purchases||[]).forEach(pu => { if(pu.date && (!earliest || pu.date < earliest)) earliest = pu.date; }));
   return earliest;
 }
 function brandLoyalty(){
   const counts = {};
-  P.forEach(p => { if(p.brand && (p.purchases||[]).length) counts[p.brand] = (counts[p.brand]||0) + p.purchases.length; });
+  PR.forEach(p => { if(p.brand && (p.purchases||[]).length) counts[p.brand] = (counts[p.brand]||0) + p.purchases.length; });
   return Object.entries(counts).filter(([,c]) => c >= 2).sort((a,b) => b[1]-a[1]).slice(0,2).map(([brand]) => brand);
 }
 function monthlyRebuyRate(){
@@ -689,7 +747,7 @@ function monthlyRebuyRate(){
 }
 function storePriceWinner(){
   const wins = {};
-  P.forEach(p => {
+  PR.forEach(p => {
     const stores = (p.where_to_buy||[]).filter(s => s.store && s.price);
     if(stores.length < 2) return;
     const cheapest = stores.reduce((a,b) => (+b.price < +a.price ? b : a));
@@ -716,12 +774,12 @@ function trustedBrandsLine(){
 }
 
 function spWatchItem(p){
-  return `<div class="sp-item" onclick="openEdit(${p.id})">
-    <div class="sp-info"><strong>${esc(p.name)}</strong>${p.brand?` <span class="sp-brand">${esc(p.brand)}</span>`:''}${storeHint(p)}
+  return `<div class="sp-item" onclick="openEdit(${p.staple_id})">
+    <div class="sp-info"><strong>${esc(p.name)}</strong>${p.brand?` <span class="sp-brand">${esc(p.brand)}</span>`:''}
       <div class="sp-note" style="color:var(--watch)">${ico('alert')} seen it? stock up before it's gone</div>
     </div>
     <div class="sp-actions">
-      <button class="buy-btn" onclick="event.stopPropagation();openBuyModal(${p.id})">${ico('cart')} Bought it!</button>
+      <button class="buy-btn" onclick="event.stopPropagation();openBuyModal(${p.staple_id})">${ico('cart')} Bought it!</button>
       <button class="snooze-btn" onclick="event.stopPropagation();stopWatching(${p.id})">${ico('eyeOff')} Stop watching</button>
     </div>
   </div>`;
@@ -733,27 +791,27 @@ function stopWatching(id){
 }
 function spPriceItem(p){
   const s = shrinkflationCheck(p);
-  return `<div class="sp-item" onclick="openEdit(${p.id})">
+  return `<div class="sp-item" onclick="openEdit(${p.staple_id})">
     <div class="sp-info"><strong>${esc(p.name)}</strong>${p.brand?` <span class="sp-brand">${esc(p.brand)}</span>`:''}
       <div class="sp-note" style="color:var(--price)">${ico('trendUp')} up ${Math.round(s.pct*100)}% per ${esc(s.unit)} since ${fmtDate(s.from.date)}</div>
     </div>
   </div>`;
 }
 function dashHTML(){
-  if(!P.length) return '';
-  const out = P.filter(p => p.status==='out'), low = P.filter(p => p.status==='running_low'), ord = P.filter(p => p.status==='ordered');
-  const predicted = P.filter(isPredictedDue).sort((a,b) => daysUntil(predictedRunout(a)) - daysUntil(predictedRunout(b)));
-  const watchList = P.filter(p => p.discontinued_watch);
-  const priceWatch = P.filter(shrinkflationCheck).sort((a,b) => shrinkflationCheck(b).pct - shrinkflationCheck(a).pct);
+  if(!S.length) return '';
+  const out = S.filter(s => s.status==='out'), low = S.filter(s => s.status==='running_low'), ord = S.filter(s => s.status==='ordered');
+  const predicted = S.filter(isPredictedDue).sort((a,b) => daysUntil(predictedRunout(a)) - daysUntil(predictedRunout(b)));
+  const watchList = PR.filter(p => p.discontinued_watch);
+  const priceWatch = PR.filter(shrinkflationCheck).sort((a,b) => shrinkflationCheck(b).pct - shrinkflationCheck(a).pct);
   const n = out.length + low.length + ord.length + predicted.length;
   const banner = n
     ? `<div class="dash-banner attention"><span class="dash-num">${n}</span><div>
         <div class="dash-head">need${n===1?'s':''} attention</div>
         <div class="dash-sub">${[out.length?`${out.length} out`:'', low.length?`${low.length} running low`:'', ord.length?`${ord.length} on order`:'', predicted.length?`${predicted.length} due soon`:''].filter(Boolean).join(' · ')}</div>
       </div></div>`
-    : `<div class="dash-banner ok"><span class="dash-num">${P.length}</span><div>
+    : `<div class="dash-banner ok"><span class="dash-num">${S.length}</span><div>
         <div class="dash-head">All stocked</div>
-        <div class="dash-sub">${P.length} product${P.length>1?'s':''} tracked — nothing needs you right now</div>
+        <div class="dash-sub">${S.length} staple${S.length>1?'s':''} tracked — nothing needs you right now</div>
       </div></div>`;
   const panel = (items, key, title, itemFn) => !items.length ? '' :
     `<div class="status-panel sp-${key}"><div class="sp-title">${title}<span class="sp-cnt">${items.length}</span></div>${items.map(itemFn||spItem).join('')}</div>`;
@@ -773,47 +831,75 @@ function showScreen(s){
 }
 function render(){
   if(_screen === 'shop'){ renderRhythm(); renderShopGroups(); return; }
-  const counts = {all: P.length};
+  const counts = {all: S.length};
   Object.keys(CATEGORIES).forEach(c => counts[c] = 0);
-  P.forEach(p => { if(counts[p.category] !== undefined) counts[p.category]++; });
+  S.forEach(s => { if(counts[s.category] !== undefined) counts[s.category]++; });
   document.getElementById('tab-strip').innerHTML =
     `<button class="tab${_tab==='all'?' active':''}" onclick="setTab('all')">All<span class="cnt">${counts.all}</span></button>` +
     Object.entries(CATEGORIES).filter(([c]) => counts[c] > 0 || _tab === c).map(([c,label]) =>
       `<button class="tab${_tab===c?' active':''}" onclick="setTab('${c}')">${label}<span class="cnt">${counts[c]}</span></button>`).join('');
-  const empty = P.length === 0;
+  const empty = S.length === 0;
   document.getElementById('empty-banner').style.display = empty ? '' : 'none';
   document.getElementById('toolbar').style.display = empty ? 'none' : '';
   document.getElementById('profile-line').innerHTML = empty ? '' : trustedBrandsLine();
   document.getElementById('dash').innerHTML = dashHTML();
   document.getElementById('catalog-title').style.display = empty ? 'none' : '';
-  const list = filtered();
-  document.getElementById('pgrid').innerHTML = list.map(cardHTML).join('');
+  const list = filteredStaples();
+  document.getElementById('pgrid').innerHTML = list.map(stapleCardHTML).join('');
   document.getElementById('no-results').style.display = (!empty && !list.length) ? '' : 'none';
 }
 function setTab(t){ _tab = t; render(); }
-function cardHTML(p){
-  const stores = (p.where_to_buy||[]).map(s => {
-    const bit = `${esc(s.store)}${s.price ? ' $'+(+s.price).toFixed(2) : ''}`;
-    return s.url ? `<a href="${esc(safeUrl(s.url))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${bit}</a>` : bit;
-  }).join(' · ');
-  const flows = (FLOWS[p.status]||[]).map(f =>
-    `<button class="flow-btn" onclick="event.stopPropagation();setStatus(${p.id},'${f.to}')">${f.label}</button>`).join('');
-  const buyBtn = `<button class="buy-btn" onclick="event.stopPropagation();openBuyModal(${p.id})">${ico('cart')} Bought it!</button>`;
-  const predictedHint = isPredictedDue(p) ? `<div class="pcard-predict">${ico('clock')} usually due ~${fmtDate(predictedRunout(p))}</div>` : '';
-  return `<div class="pcard" onclick="openEdit(${p.id})">
+function stapleCardHTML(staple){
+  const products = stapleProducts(staple.id);
+  const flows = (FLOWS[staple.status]||[]).map(f =>
+    `<button class="flow-btn" onclick="event.stopPropagation();setStatus(${staple.id},'${f.to}')">${f.label}</button>`).join('');
+  const buyBtn = `<button class="buy-btn" onclick="event.stopPropagation();openBuyModal(${staple.id})">${ico('cart')} Bought it!</button>`;
+  const kind = predictionKind(staple);
+  const run = predictedRunout(staple);
+  const predictedHint = (isPredictedDue(staple) && run != null)
+    ? (kind === 'stock'
+        ? `<div class="pcard-predict">${ico('package')} covered until ~${fmtDate(run)}</div>`
+        : `<div class="pcard-predict">${ico('clock')} usually due ~${fmtDate(run)}</div>`)
+    : '';
+  const onHand = totalOnHand(staple);
+  const onHandBit = onHand > 0 ? `<div class="pcard-onhand">${ico('package')} ${onHand} on hand</div>` : '';
+
+  if(products.length <= 1){
+    const pr = products[0];
+    const stores = pr ? (pr.where_to_buy||[]).map(s => {
+      const bit = `${esc(s.store)}${s.price ? ' $'+(+s.price).toFixed(2) : ''}`;
+      return s.url ? `<a href="${esc(safeUrl(s.url))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${bit}</a>` : bit;
+    }).join(' · ') : '';
+    const finishBtn = pr ? `<button class="flow-btn" onclick="event.stopPropagation();finishOne(${pr.id})">${ico('trendDown')} Finished one</button>` : '';
+    return `<div class="pcard" onclick="openEdit(${staple.id})">
+      <div class="pcard-top">
+        <span class="chip chip-${esc(staple.status)}">${STATUS[staple.status]?.label||staple.status}</span>
+        <span class="chip chip-cat">${CATEGORIES[staple.category]||esc(staple.category)}</span>
+        ${pr && pr.discontinued_watch?`<span class="watch-flag" title="Stock up when seen">${ico('alert')}</span>`:''}
+      </div>
+      <div class="pcard-name">${esc(staple.name)}</div>
+      ${pr && pr.brand?`<div class="pcard-brand">${esc(pr.brand)}</div>`:''}
+      ${pr && (pr.size||pr.rating)?`<div class="pcard-meta">${[pr.size?esc(pr.size):'',pr.rating?`<span class="stars">${'★'.repeat(pr.rating)}</span>`:''].filter(Boolean).join(' · ')}</div>`:''}
+      ${stores?`<div class="pcard-stores">${ico('cart')} ${stores}</div>`:''}
+      ${onHandBit}
+      ${predictedHint}
+      ${pr?shrinkChipHTML(pr):''}
+      ${staple.substitutes?`<div class="pcard-subs">Backup: ${esc(staple.substitutes)}</div>`:''}
+      ${pr && pr.notes?`<div class="pcard-notes">${esc(pr.notes)}</div>`:''}
+      <div class="pcard-actions">${buyBtn}${finishBtn}${flows}</div>
+    </div>`;
+  }
+  const brandsLine = stapleBrandsSummary(products);
+  return `<div class="pcard" onclick="openEdit(${staple.id})">
     <div class="pcard-top">
-      <span class="chip chip-${esc(p.status)}">${STATUS[p.status]?.label||p.status}</span>
-      <span class="chip chip-cat">${CATEGORIES[p.category]||esc(p.category)}</span>
-      ${p.discontinued_watch?`<span class="watch-flag" title="Stock up when seen">${ico('alert')}</span>`:''}
+      <span class="chip chip-${esc(staple.status)}">${STATUS[staple.status]?.label||staple.status}</span>
+      <span class="chip chip-cat">${CATEGORIES[staple.category]||esc(staple.category)}</span>
     </div>
-    <div class="pcard-name">${esc(p.name)}</div>
-    ${p.brand?`<div class="pcard-brand">${esc(p.brand)}</div>`:''}
-    ${p.size||p.rating?`<div class="pcard-meta">${[p.size?esc(p.size):'',p.rating?`<span class="stars">${'★'.repeat(p.rating)}</span>`:''].filter(Boolean).join(' · ')}</div>`:''}
-    ${stores?`<div class="pcard-stores">${ico('cart')} ${stores}</div>`:''}
+    <div class="pcard-name">${esc(staple.name)}</div>
+    <div class="pcard-brand">${esc(brandsLine)} <span style="color:var(--muted);font-weight:400">· ${products.length} variants</span></div>
+    ${onHandBit}
     ${predictedHint}
-    ${shrinkChipHTML(p)}
-    ${p.substitutes?`<div class="pcard-subs">Backup: ${esc(p.substitutes)}</div>`:''}
-    ${p.notes?`<div class="pcard-notes">${esc(p.notes)}</div>`:''}
+    ${staple.substitutes?`<div class="pcard-subs">Backup: ${esc(staple.substitutes)}</div>`:''}
     <div class="pcard-actions">${buyBtn}${flows}</div>
   </div>`;
 }
@@ -822,12 +908,12 @@ function cardHTML(p){
 let _rhythmOpen = null;
 function computeRhythm(){
   const weeks = Array.from({length:8}, (_,i) => ({start: addDays(today(), i*7), items: []}));
-  P.forEach(p => {
-    const run = predictedRunout(p);
+  S.forEach(s => {
+    const run = predictedRunout(s);
     if(run == null) return;
     const d = daysUntil(run);
     if(d < 0 || d >= 56) return;
-    weeks[Math.min(7, Math.floor(d/7))].items.push(p);
+    weeks[Math.min(7, Math.floor(d/7))].items.push(s);
   });
   return weeks;
 }
@@ -846,26 +932,28 @@ function renderRhythmDetail(weeks){
   const box = document.getElementById('rhythm-detail');
   if(_rhythmOpen == null){ box.innerHTML = ''; return; }
   const w = weeks[_rhythmOpen];
-  box.innerHTML = `<div class="rhythm-detail">${w.items.length ? w.items.map(p =>
-    `<div class="rd-item">${ico('clock')} <strong>${esc(p.name)}</strong>${p.brand?` · ${esc(p.brand)}`:''} — ${fmtDate(predictedRunout(p))}</div>`).join('')
+  box.innerHTML = `<div class="rhythm-detail">${w.items.length ? w.items.map(s =>
+    `<div class="rd-item">${ico('clock')} <strong>${esc(s.name)}</strong> — ${fmtDate(predictedRunout(s))}</div>`).join('')
     : '<div class="rd-empty">Nothing predicted to run out this week.</div>'}</div>`;
 }
 
 // ---- SHOPPING MODE ----
 let _shopChecked = new Set();
 function shoppingNeeds(){
-  return P.filter(p => p.status==='running_low' || p.status==='out' || isPredictedDue(p));
+  return S.filter(s => s.status==='running_low' || s.status==='out' || isPredictedDue(s));
 }
-function primaryStore(p){
-  const s = (p.where_to_buy||[])[0];
-  return s && s.store ? s.store : null;
+function primaryStoreForStaple(s){
+  const pr = defaultVariantFor(s);
+  const st = pr && (pr.where_to_buy||[])[0];
+  return st && st.store ? st.store : null;
 }
-function shopItemHTML(p, store){
-  const price = (p.where_to_buy||[]).find(w => w.store===store)?.price ?? null;
-  const checked = _shopChecked.has(p.id);
+function shopItemHTML(s, store){
+  const pr = defaultVariantFor(s);
+  const price = pr ? (pr.where_to_buy||[]).find(w => w.store===store)?.price ?? null : null;
+  const checked = _shopChecked.has(s.id);
   return `<label class="shop-item${checked?' checked':''}">
-    <input type="checkbox" ${checked?'checked':''} onchange="toggleShopCheck(${p.id})">
-    <span class="shop-item-name">${esc(p.name)}${p.brand?` <span class="shop-item-brand">${esc(p.brand)}</span>`:''}</span>
+    <input type="checkbox" ${checked?'checked':''} onchange="toggleShopCheck(${s.id})">
+    <span class="shop-item-name">${esc(s.name)}${pr && pr.brand?` <span class="shop-item-brand">${esc(pr.brand)}</span>`:''}</span>
     <span class="shop-item-price">${price?'$'+(+price).toFixed(2):''}</span>
   </label>`;
 }
@@ -873,14 +961,17 @@ function renderShopGroups(){
   const needs = shoppingNeeds();
   document.getElementById('shop-empty').style.display = needs.length ? 'none' : '';
   const groups = {};
-  needs.forEach(p => { const s = primaryStore(p) || 'Unspecified store'; (groups[s] = groups[s]||[]).push(p); });
+  needs.forEach(s => { const st = primaryStoreForStaple(s) || 'Unspecified store'; (groups[st] = groups[st]||[]).push(s); });
   const storeNames = Object.keys(groups).sort((a,b) => (a==='Unspecified store') - (b==='Unspecified store') || a.localeCompare(b));
   document.getElementById('shop-groups').innerHTML = storeNames.map(store => {
     const items = groups[store];
-    const total = items.reduce((s,p) => s + (+((p.where_to_buy||[]).find(w=>w.store===store)?.price) || 0), 0);
+    const total = items.reduce((sum,s) => {
+      const pr = defaultVariantFor(s);
+      return sum + (+((pr?.where_to_buy||[]).find(w=>w.store===store)?.price) || 0);
+    }, 0);
     return `<div class="shop-group">
       <div class="shop-group-head"><span class="sg-name">${esc(store)}</span><span class="shop-total">${items.length} item${items.length>1?'s':''}${total?' · ~$'+total.toFixed(2):''}</span></div>
-      ${items.map(p => shopItemHTML(p, store)).join('')}
+      ${items.map(s => shopItemHTML(s, store)).join('')}
       <button class="btn btn-ghost" style="margin-top:.6rem" onclick="markStoreChecked('${store.replace(/'/g,"\\'")}')">${ico('check')} Mark checked as bought</button>
     </div>`;
   }).join('');
@@ -890,14 +981,16 @@ function toggleShopCheck(id){
   renderShopGroups();
 }
 function markStoreChecked(store){
-  const items = shoppingNeeds().filter(p => (primaryStore(p)||'Unspecified store') === store && _shopChecked.has(p.id));
+  const items = shoppingNeeds().filter(s => (primaryStoreForStaple(s)||'Unspecified store') === store && _shopChecked.has(s.id));
   if(!items.length){ alert('Check off items first, then mark them bought.'); return; }
-  items.forEach(p => {
-    const price = (p.where_to_buy||[]).find(w => w.store===store)?.price ?? null;
-    (p.purchases = p.purchases||[]).push({date: today(), price, store: store==='Unspecified store'?'':store, size: p.size||''});
-    p.status = 'stocked';
-    p.snooze_until = null;
-    _shopChecked.delete(p.id);
+  items.forEach(s => {
+    const pr = defaultVariantFor(s); if(!pr) return;
+    const price = (pr.where_to_buy||[]).find(w => w.store===store)?.price ?? null;
+    (pr.purchases = pr.purchases||[]).push({date: today(), price, store: store==='Unspecified store'?'':store, size: pr.size||''});
+    pr.on_hand = (pr.on_hand||0) + 1;
+    s.status = 'stocked';
+    s.snooze_until = null;
+    _shopChecked.delete(s.id);
   });
   saveToStorage();
   renderRhythm();
@@ -906,212 +999,372 @@ function markStoreChecked(store){
 
 // ---- STATUS ----
 function setStatus(id, status){
-  const p = byId(id); if(!p) return;
+  const s = stapleById(id); if(!s) return;
   if(status === 'out'){
     // Ran out earlier than predicted — tighten the estimate so the radar learns.
-    const run = predictedRunout(p);
-    if(run != null && daysUntil(run) > 3) p.interval_adjust = Math.max((p.interval_adjust ?? 1) * 0.85, 0.5);
+    const run = predictedRunout(s);
+    if(run != null && daysUntil(run) > 3) s.interval_adjust = Math.max((s.interval_adjust ?? 1) * 0.85, 0.5);
   }
-  p.status = status;
-  p.snooze_until = null;
+  s.status = status;
+  s.snooze_until = null;
+  saveToStorage(); render();
+}
+
+// ---- INVENTORY ----
+function finishOne(id){
+  const pr = byId(id); if(!pr) return;
+  pr.on_hand = Math.max(0, (pr.on_hand||0) - 1);
+  (pr.finished_events = pr.finished_events||[]).push({date: today()});
   saveToStorage(); render();
 }
 
 // ---- PURCHASE LOGGING ----
-let _buyingId = null;
+// "Bought it" is a staple-level action: it asks which variant when there's
+// more than one, defaulting to whichever was purchased most recently.
+let _buyingStapleId = null;
 function openBuyModal(id){
-  const p = byId(id); if(!p) return;
-  _buyingId = id;
-  document.getElementById('buy-title').textContent = `Bought: ${p.name}`;
+  const staple = stapleById(id); if(!staple) return;
+  _buyingStapleId = id;
+  const products = stapleProducts(id);
+  document.getElementById('buy-title').textContent = `Bought: ${staple.name}`;
+  const variantWrap = document.getElementById('buy-variant-wrap');
+  if(products.length > 1){
+    variantWrap.style.display = '';
+    const def = defaultVariantFor(staple);
+    document.getElementById('buy-variant').innerHTML = products.map(pr =>
+      `<option value="${pr.id}"${def && pr.id===def.id?' selected':''}>${esc(pr.brand?`${pr.brand} — ${pr.name}`:pr.name)}</option>`).join('');
+    onBuyVariantChange();
+  } else {
+    variantWrap.style.display = 'none';
+    prefillBuyFromProduct(products[0]);
+  }
   document.getElementById('buy-date').value = today();
-  const last = (p.purchases||[]).slice().sort((a,b)=>a.date.localeCompare(b.date)).slice(-1)[0];
-  const firstStore = (p.where_to_buy||[])[0];
-  document.getElementById('buy-price').value = last?.price ?? firstStore?.price ?? '';
-  document.getElementById('buy-store').value = last?.store ?? firstStore?.store ?? '';
-  document.getElementById('buy-size').value = last?.size ?? p.size ?? '';
+  document.getElementById('buy-qty').value = 1;
   document.getElementById('buy-on-sale').checked = false;
   openModal('buy-modal');
 }
+function onBuyVariantChange(){
+  prefillBuyFromProduct(byId(+document.getElementById('buy-variant').value));
+}
+function prefillBuyFromProduct(pr){
+  if(!pr){ document.getElementById('buy-price').value=''; document.getElementById('buy-store').value=''; document.getElementById('buy-size').value=''; return; }
+  const last = (pr.purchases||[]).slice().sort((a,b)=>a.date.localeCompare(b.date)).slice(-1)[0];
+  const firstStore = (pr.where_to_buy||[])[0];
+  document.getElementById('buy-price').value = last?.price ?? firstStore?.price ?? '';
+  document.getElementById('buy-store').value = last?.store ?? firstStore?.store ?? '';
+  document.getElementById('buy-size').value = last?.size ?? pr.size ?? '';
+}
 function confirmBuy(){
-  const p = byId(_buyingId); if(!p) return;
+  const staple = stapleById(_buyingStapleId); if(!staple) return;
+  const products = stapleProducts(staple.id);
+  const targetId = products.length > 1 ? +document.getElementById('buy-variant').value : products[0]?.id;
+  const pr = byId(targetId); if(!pr) return;
   const date = document.getElementById('buy-date').value || today();
   const price = document.getElementById('buy-price').value ? +document.getElementById('buy-price').value : null;
   const store = document.getElementById('buy-store').value.trim();
   const size = document.getElementById('buy-size').value.trim();
   const on_sale = document.getElementById('buy-on-sale').checked;
-  (p.purchases = p.purchases||[]).push({date, price, store, size, on_sale});
-  p.status = 'stocked';
-  p.snooze_until = null;
+  const qty = Math.max(1, +document.getElementById('buy-qty').value || 1);
+  (pr.purchases = pr.purchases||[]).push({date, price, store, size, on_sale});
+  pr.on_hand = (pr.on_hand||0) + qty;
+  staple.status = 'stocked';
+  staple.snooze_until = null;
   closeModal('buy-modal');
   saveToStorage(); render();
 }
-function snoozeProduct(id){
-  const p = byId(id); if(!p) return;
-  p.snooze_until = addDays(today(), 14);
+function snoozeStaple(id){
+  const s = stapleById(id); if(!s) return;
+  s.snooze_until = addDays(today(), 14);
   // Still fine — gently widen the prediction so the radar quiets down.
-  p.interval_adjust = Math.min((p.interval_adjust ?? 1) * 1.08, 1.6);
+  s.interval_adjust = Math.min((s.interval_adjust ?? 1) * 1.08, 1.6);
   saveToStorage(); render();
 }
 
-// ---- ADD / EDIT ----
+// ---- ADD / EDIT (staple + variant-blocks) ----
+// A single-variant staple's form looks exactly like a plain product form.
+// Tapping "Track another brand" reveals the staple-name field and switches
+// to a repeatable list of variant blocks, one per brand/size, plus a live
+// brand-comparison table once there are 2+.
 function fillCategorySelect(sel){
   document.getElementById(sel).innerHTML = Object.entries(CATEGORIES).map(([c,l]) => `<option value="${c}">${l}</option>`).join('');
 }
-function addStoreRow(store, price, url){
+let _blockData = {};       // vid -> {purchases:[...], finishedPending:0}
+let _variantBlockSeq = 1;
+
+function variantBlockHTML(pr){
+  const vid = pr ? String(pr.id) : 'new'+(_variantBlockSeq++);
+  _blockData[vid] = { purchases: pr ? JSON.parse(JSON.stringify(pr.purchases||[])) : [], finishedPending: 0 };
+  return `<div class="variant-block" data-vid="${vid}">
+    <div class="field-row">
+      <div class="field"><label>Product name</label><input class="v-name" value="${esc(pr?.name||'')}" placeholder="e.g. Hydrating Facial Cleanser"></div>
+      <div class="field"><label>Brand</label><input class="v-brand" value="${esc(pr?.brand||'')}" placeholder="e.g. CeraVe"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Size</label><input class="v-size" value="${esc(pr?.size||'')}" placeholder="e.g. 19 oz"></div>
+      <div class="field"><label>Rating</label>
+        <select class="v-rating"><option value="">—</option>${[1,2,3,4,5].map(n=>`<option value="${n}"${pr?.rating===n?' selected':''}>${'★'.repeat(n)}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>On hand</label><input class="v-onhand" type="number" min="0" step="1" value="${pr?.on_hand ?? 0}"></div>
+      <div class="field" style="display:flex;align-items:flex-end;padding-bottom:.85rem">${pr ? `<button class="btn btn-ghost" type="button" onclick="finishOneInForm('${vid}')">${ico('trendDown')} Finished one</button>` : ''}</div>
+    </div>
+    <div class="form-sec">Where to buy</div>
+    <div class="v-stores"></div>
+    <button class="btn btn-ghost" type="button" onclick="addStoreRowTo(this)">＋ Add store</button>
+    <div class="form-sec">Sale patterns</div>
+    <div class="v-sales"></div>
+    <button class="btn btn-ghost" type="button" onclick="addSaleRowTo(this)">＋ Add sale pattern</button>
+    <div class="form-sec">Purchase history</div>
+    <div class="v-phist"></div>
+    <div class="field-row" style="margin-top:.6rem">
+      <div class="field"><label>Add a past purchase — date</label><input class="v-hist-date" type="date" value="${today()}"></div>
+      <div class="field"><label>Price</label><input class="v-hist-price" type="number" step="0.01" min="0" placeholder="$"></div>
+      <div class="field"><label>Store</label><input class="v-hist-store" placeholder="Store"></div>
+      <div class="field"><label>Size</label><input class="v-hist-size" placeholder="e.g. 19 oz" value="${esc(pr?.size||'')}"></div>
+    </div>
+    <label class="check-row" style="margin-bottom:.6rem"><input type="checkbox" class="v-hist-sale"> Bought on sale</label>
+    <button class="btn btn-ghost" type="button" onclick="addHistPurchaseTo(this)">＋ Add to history</button>
+    <div class="field" style="margin-top:.6rem"><label>Notes (why this one, shade names…)</label><textarea class="v-notes">${esc(pr?.notes||'')}</textarea></div>
+    <label class="check-row"><input type="checkbox" class="v-watch" ${pr?.discontinued_watch?'checked':''}> Stock up when seen — being discontinued</label>
+    <div style="text-align:right;margin-top:.5rem"><button class="btn btn-ghost" type="button" onclick="removeVariantBlock(this)">${ico('x')} Remove this variant</button></div>
+    <hr style="border:none;border-top:1px dashed var(--border);margin:1.1rem 0 0">
+  </div>`;
+}
+function addStoreRowTo(el, store, price, url){
+  const block = el.classList.contains('variant-block') ? el : el.closest('.variant-block');
   const div = document.createElement('div');
   div.className = 'store-row';
   div.innerHTML = `<input class="st-store" placeholder="Store" value="${esc(store||'')}">
     <input class="st-price" type="number" step="0.01" min="0" placeholder="$" value="${price ?? ''}">
     <input class="st-url" placeholder="Link (optional)" value="${esc(url||'')}">
     <button class="store-x" type="button" onclick="this.parentElement.remove()" title="Remove store">${ico('x')}</button>`;
-  document.getElementById('f-stores').appendChild(div);
+  block.querySelector('.v-stores').appendChild(div);
 }
-function collectStores(){
-  return [...document.querySelectorAll('#f-stores .store-row')].map(r => ({
+function collectStoresFrom(block){
+  return [...block.querySelectorAll('.v-stores .store-row')].map(r => ({
     store: r.querySelector('.st-store').value.trim(),
     price: r.querySelector('.st-price').value ? +r.querySelector('.st-price').value : null,
     url: r.querySelector('.st-url').value.trim()
   })).filter(s => s.store || s.price || s.url);
 }
-function addSaleRow(store, when, notes){
+function addSaleRowTo(el, store, when, notes){
+  const block = el.classList.contains('variant-block') ? el : el.closest('.variant-block');
   const div = document.createElement('div');
   div.className = 'sale-row';
   div.innerHTML = `<input class="sl-store" placeholder="Store — e.g. Ulta" value="${esc(store||'')}">
     <input class="sl-when" placeholder="When — e.g. July" value="${esc(when||'')}">
     <input class="sl-notes" placeholder="Notes (optional)" value="${esc(notes||'')}">
     <button class="store-x" type="button" onclick="this.parentElement.remove()" title="Remove">${ico('x')}</button>`;
-  document.getElementById('f-sales').appendChild(div);
+  block.querySelector('.v-sales').appendChild(div);
 }
-function collectSalePatterns(){
-  return [...document.querySelectorAll('#f-sales .sale-row')].map(r => ({
+function collectSalesFrom(block){
+  return [...block.querySelectorAll('.v-sales .sale-row')].map(r => ({
     store: r.querySelector('.sl-store').value.trim(),
     when: r.querySelector('.sl-when').value.trim(),
     notes: r.querySelector('.sl-notes').value.trim()
   })).filter(s => s.store || s.when || s.notes);
+}
+function renderBlockPurchaseHistory(vid, block){
+  const list = _blockData[vid].purchases.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  const sizeHint = block.querySelector('.v-size').value;
+  block.querySelector('.v-phist').innerHTML = list.length ? list.map(pu => {
+    const realIdx = _blockData[vid].purchases.indexOf(pu);
+    const parsed = parseSize(pu.size || sizeHint);
+    const unitBit = (parsed && pu.price) ? ` · $${(+pu.price/parsed.qty).toFixed(2)}/${esc(parsed.unit)}` : '';
+    const saleTag = pu.on_sale ? `<span class="sale-tag">${ico('check')} Sale</span>` : '';
+    return `<div class="phist-row"><span>${fmtDate(pu.date)}${pu.store?` · ${esc(pu.store)}`:''}${pu.price?` · $${(+pu.price).toFixed(2)}`:''}${pu.size?` · ${esc(pu.size)}`:''}${unitBit}${saleTag}</span>
+      <button class="phist-x" type="button" onclick="deleteBlockHistPurchase('${vid}',${realIdx})" title="Remove">${ico('x')}</button></div>`;
+  }).join('') : `<div class="phist-empty">No purchases logged yet — add one below, or tap ${ico('cart')} Bought it! on the card.</div>`;
+}
+function addHistPurchaseTo(btn){
+  const block = btn.closest('.variant-block');
+  const vid = block.dataset.vid;
+  const priceEl = block.querySelector('.v-hist-price');
+  const date = block.querySelector('.v-hist-date').value || today();
+  const price = priceEl.value ? +priceEl.value : null;
+  const store = block.querySelector('.v-hist-store').value.trim();
+  const size = block.querySelector('.v-hist-size').value.trim();
+  const on_sale = block.querySelector('.v-hist-sale').checked;
+  _blockData[vid].purchases.push({date, price, store, size, on_sale});
+  priceEl.value = ''; block.querySelector('.v-hist-store').value = ''; block.querySelector('.v-hist-sale').checked = false;
+  renderBlockPurchaseHistory(vid, block);
+  renderBrandCompareIfNeeded();
+}
+function deleteBlockHistPurchase(vid, idx){
+  _blockData[vid].purchases.splice(idx, 1);
+  renderBlockPurchaseHistory(vid, document.querySelector(`.variant-block[data-vid="${vid}"]`));
+  renderBrandCompareIfNeeded();
+}
+function finishOneInForm(vid){
+  const block = document.querySelector(`.variant-block[data-vid="${vid}"]`);
+  const input = block.querySelector('.v-onhand');
+  input.value = Math.max(0, (+input.value||0) - 1);
+  _blockData[vid].finishedPending = (_blockData[vid].finishedPending||0) + 1;
+}
+function addVariantClicked(){
+  document.getElementById('staple-name-wrap').style.display = '';
+  const nameField = document.getElementById('f-staple-name');
+  if(!nameField.value.trim()){
+    const firstBlock = document.querySelector('.variant-block');
+    if(firstBlock) nameField.value = firstBlock.querySelector('.v-name').value.trim();
+  }
+  const wrap = document.getElementById('variants-wrap');
+  const div = document.createElement('div');
+  div.innerHTML = variantBlockHTML(null);
+  const block = div.firstElementChild;
+  wrap.appendChild(block);
+  addStoreRowTo(block); addSaleRowTo(block);
+  renderBlockPurchaseHistory(block.dataset.vid, block);
+  renderBrandCompareIfNeeded();
+  block.querySelector('.v-name').focus();
+}
+function removeVariantBlock(btn){
+  const blocks = document.querySelectorAll('.variant-block');
+  if(blocks.length <= 1){ alert('A staple needs at least one variant — use Delete to remove it entirely.'); return; }
+  const block = btn.closest('.variant-block');
+  delete _blockData[block.dataset.vid];
+  block.remove();
+  renderBrandCompareIfNeeded();
+}
+function renderBrandCompareIfNeeded(){
+  const wrap = document.getElementById('brand-compare-wrap');
+  const blocks = [...document.querySelectorAll('.variant-block')];
+  if(blocks.length < 2){ wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  const rows = blocks.map(block => {
+    const vid = block.dataset.vid;
+    const name = block.querySelector('.v-name').value.trim() || '(unnamed)';
+    const brand = block.querySelector('.v-brand').value.trim();
+    const size = block.querySelector('.v-size').value.trim();
+    const rating = block.querySelector('.v-rating').value;
+    const purchases = _blockData[vid].purchases;
+    const entries = purchases.map(pu => {
+      const parsed = parseSize(pu.size || size);
+      return (parsed && pu.price) ? {date: pu.date, unitPrice: +pu.price/parsed.qty, unit: parsed.unit} : null;
+    }).filter(Boolean).sort((a,b)=>a.date.localeCompare(b.date));
+    const unitPrice = entries.length ? `$${entries[entries.length-1].unitPrice.toFixed(2)}/${entries[entries.length-1].unit}` : '—';
+    const gap = medianGap(purchases);
+    const gapLabel = gap != null ? `~${Math.round(gap)} days` : 'Not enough data';
+    return {label: brand?`${brand} ${name}`:name, unitPrice, ratingStr: rating?'★'.repeat(+rating):'—', gapLabel};
+  });
+  document.getElementById('brand-compare').innerHTML = `<div class="bc-table">
+    <div class="bc-row bc-head"><span>Variant</span><span>Unit price</span><span>Rating</span><span>Avg. gap</span></div>
+    ${rows.map(r=>`<div class="bc-row"><span>${esc(r.label)}</span><span>${esc(r.unitPrice)}</span><span class="stars">${r.ratingStr}</span><span>${esc(r.gapLabel)}</span></div>`).join('')}
+  </div>`;
 }
 function openAdd(){
   _editing = null;
   document.getElementById('pm-title').textContent = 'Add Product';
   document.getElementById('pm-delete').style.display = 'none';
   fillCategorySelect('f-category');
-  ['f-name','f-brand','f-size','f-subs','f-notes','f-interval','f-hist-price','f-hist-store','f-hist-size'].forEach(i => document.getElementById(i).value = '');
   document.getElementById('f-category').value = 'bath_body';
   document.getElementById('f-status').value = 'stocked';
-  document.getElementById('f-rating').value = '';
-  document.getElementById('f-watch').checked = false;
-  document.getElementById('f-stores').innerHTML = '';
-  addStoreRow();
-  document.getElementById('f-sales').innerHTML = '';
-  addSaleRow();
-  document.getElementById('f-hist-date').value = today();
-  document.getElementById('f-hist-sale').checked = false;
-  document.getElementById('f-phist').innerHTML = '<div class="phist-empty">Save the product first, then log purchases from its card.</div>';
-  document.getElementById('f-predict-note').innerHTML = '';
+  document.getElementById('f-subs').value = '';
+  document.getElementById('f-interval').value = '';
+  document.getElementById('f-staple-name').value = '';
+  document.getElementById('staple-name-wrap').style.display = 'none';
+  _blockData = {}; _variantBlockSeq = 1;
+  const wrap = document.getElementById('variants-wrap');
+  wrap.innerHTML = variantBlockHTML(null);
+  const block = wrap.querySelector('.variant-block');
+  addStoreRowTo(block); addSaleRowTo(block);
+  renderBlockPurchaseHistory(block.dataset.vid, block);
+  document.getElementById('brand-compare-wrap').style.display = 'none';
   openModal('product-modal');
-  document.getElementById('f-name').focus();
+  block.querySelector('.v-name').focus();
 }
 function openEdit(id){
-  const p = byId(id); if(!p) return;
+  const s = stapleById(id); if(!s) return;
   _editing = id;
   document.getElementById('pm-title').textContent = 'Edit Product';
   document.getElementById('pm-delete').style.display = '';
   fillCategorySelect('f-category');
-  document.getElementById('f-name').value = p.name||'';
-  document.getElementById('f-brand').value = p.brand||'';
-  document.getElementById('f-category').value = p.category||'other';
-  document.getElementById('f-size').value = p.size||'';
-  document.getElementById('f-status').value = p.status||'stocked';
-  document.getElementById('f-rating').value = p.rating ?? '';
-  document.getElementById('f-subs').value = p.substitutes||'';
-  document.getElementById('f-notes').value = p.notes||'';
-  document.getElementById('f-watch').checked = !!p.discontinued_watch;
-  document.getElementById('f-stores').innerHTML = '';
-  (p.where_to_buy||[]).forEach(s => addStoreRow(s.store, s.price, s.url));
-  if(!(p.where_to_buy||[]).length) addStoreRow();
-  document.getElementById('f-sales').innerHTML = '';
-  (p.sale_patterns||[]).forEach(s => addSaleRow(s.store, s.when, s.notes));
-  if(!(p.sale_patterns||[]).length) addSaleRow();
-  document.getElementById('f-interval').value = p.interval_override_days ?? '';
-  document.getElementById('f-hist-date').value = today();
-  document.getElementById('f-hist-price').value = '';
-  document.getElementById('f-hist-store').value = '';
-  document.getElementById('f-hist-size').value = p.size||'';
-  document.getElementById('f-hist-sale').checked = false;
-  renderPurchaseHistory(p);
+  document.getElementById('f-category').value = s.category||'other';
+  document.getElementById('f-status').value = s.status||'stocked';
+  document.getElementById('f-subs').value = s.substitutes||'';
+  document.getElementById('f-interval').value = s.interval_override_days ?? '';
+  const products = stapleProducts(s.id);
+  document.getElementById('f-staple-name').value = s.name||'';
+  document.getElementById('staple-name-wrap').style.display = products.length > 1 ? '' : 'none';
+  _blockData = {}; _variantBlockSeq = 1;
+  const wrap = document.getElementById('variants-wrap');
+  wrap.innerHTML = '';
+  (products.length ? products : [null]).forEach(pr => {
+    const div = document.createElement('div');
+    div.innerHTML = variantBlockHTML(pr);
+    const block = div.firstElementChild;
+    wrap.appendChild(block);
+    if(pr){
+      (pr.where_to_buy||[]).forEach(st => addStoreRowTo(block, st.store, st.price, st.url));
+      if(!(pr.where_to_buy||[]).length) addStoreRowTo(block);
+      (pr.sale_patterns||[]).forEach(sl => addSaleRowTo(block, sl.store, sl.when, sl.notes));
+      if(!(pr.sale_patterns||[]).length) addSaleRowTo(block);
+    } else {
+      addStoreRowTo(block); addSaleRowTo(block);
+    }
+    renderBlockPurchaseHistory(block.dataset.vid, block);
+  });
+  renderBrandCompareIfNeeded();
   openModal('product-modal');
 }
-function renderPurchaseHistory(p){
-  const list = (p.purchases||[]).slice().sort((a,b)=>b.date.localeCompare(a.date));
-  const box = document.getElementById('f-phist');
-  box.innerHTML = list.length ? list.map(pu => {
-    const realIdx = (p.purchases||[]).indexOf(pu);
-    const parsed = parseSize(pu.size || p.size);
-    const unitBit = (parsed && pu.price) ? ` · $${(+pu.price/parsed.qty).toFixed(2)}/${esc(parsed.unit)}` : '';
-    const saleTag = pu.on_sale ? `<span class="sale-tag">${ico('check')} Sale</span>` : '';
-    return `<div class="phist-row"><span>${fmtDate(pu.date)}${pu.store?` · ${esc(pu.store)}`:''}${pu.price?` · $${(+pu.price).toFixed(2)}`:''}${pu.size?` · ${esc(pu.size)}`:''}${unitBit}${saleTag}</span>
-      <button class="phist-x" type="button" onclick="deleteHistPurchase(${realIdx})" title="Remove">${ico('x')}</button></div>`;
-  }).join('') : `<div class="phist-empty">No purchases logged yet — add one below, or tap ${ico('cart')} Bought it! on the card.</div>`;
-  const note = document.getElementById('f-predict-note');
-  const run = predictedRunout(p);
-  const bits = [];
-  if(run != null){
-    const basis = (p.purchases||[]).length >= 2 ? `based on your last ${p.purchases.length} purchases` : 'based on your manual interval above';
-    bits.push(`<div class="predict-note">${ico('clock')} Predicted next rebuy: <strong>${fmtDate(run)}</strong> — ${basis}</div>`);
-  } else {
-    bits.push('<div class="predict-note">Log 2 purchases (or set an interval above) to get a rebuy prediction.</div>');
-  }
-  const shrink = shrinkflationCheck(p);
-  if(shrink) bits.push(`<div class="predict-note" style="background:var(--price-bg)">${ico('trendUp')} Price per <strong>${esc(shrink.unit)}</strong> is up <strong>${Math.round(shrink.pct*100)}%</strong> since ${fmtDate(shrink.from.date)} ($${shrink.from.unitPrice.toFixed(2)} → $${shrink.to.unitPrice.toFixed(2)})</div>`);
-  note.innerHTML = bits.join('');
-}
-function addHistPurchase(){
-  if(_editing == null){ alert('Save the product first, then add purchase history.'); return; }
-  const p = byId(_editing); if(!p) return;
-  const date = document.getElementById('f-hist-date').value || today();
-  const price = document.getElementById('f-hist-price').value ? +document.getElementById('f-hist-price').value : null;
-  const store = document.getElementById('f-hist-store').value.trim();
-  const size = document.getElementById('f-hist-size').value.trim();
-  const on_sale = document.getElementById('f-hist-sale').checked;
-  (p.purchases = p.purchases||[]).push({date, price, store, size, on_sale});
-  document.getElementById('f-hist-price').value = '';
-  document.getElementById('f-hist-store').value = '';
-  document.getElementById('f-hist-size').value = '';
-  document.getElementById('f-hist-sale').checked = false;
-  renderPurchaseHistory(p);
-  saveToStorage(); render();
-}
-function deleteHistPurchase(idx){
-  const p = byId(_editing); if(!p) return;
-  p.purchases.splice(idx, 1);
-  renderPurchaseHistory(p);
-  saveToStorage(); render();
-}
-function saveProduct(){
-  const name = document.getElementById('f-name').value.trim();
-  if(!name){ alert('Give the product a name.'); return; }
-  const vals = {
-    name,
-    brand: document.getElementById('f-brand').value.trim(),
+function saveStaple(){
+  const blocks = [...document.querySelectorAll('.variant-block')];
+  if(!blocks.length){ alert('Add at least one product.'); return; }
+  if(blocks.some(b => !b.querySelector('.v-name').value.trim())){ alert('Give every variant a product name.'); return; }
+  const multi = blocks.length > 1;
+  const firstName = blocks[0].querySelector('.v-name').value.trim();
+  const stapleVals = {
+    name: multi ? (document.getElementById('f-staple-name').value.trim() || firstName) : firstName,
     category: document.getElementById('f-category').value,
-    size: document.getElementById('f-size').value.trim(),
     status: document.getElementById('f-status').value,
-    rating: document.getElementById('f-rating').value ? +document.getElementById('f-rating').value : null,
-    where_to_buy: collectStores(),
-    sale_patterns: collectSalePatterns(),
     substitutes: document.getElementById('f-subs').value.trim(),
-    notes: document.getElementById('f-notes').value.trim(),
-    discontinued_watch: document.getElementById('f-watch').checked,
     interval_override_days: document.getElementById('f-interval').value ? +document.getElementById('f-interval').value : null
   };
-  if(_editing != null) Object.assign(byId(_editing), vals);
-  else P.push({id: nextId++, purchases: [], interval_adjust: 1, snooze_until: null, ...vals});
+  let staple;
+  if(_editing != null){ staple = stapleById(_editing); Object.assign(staple, stapleVals); }
+  else { staple = {id: nextId++, interval_adjust: 1, snooze_until: null, ...stapleVals}; S.push(staple); }
+
+  const keepIds = new Set();
+  blocks.forEach(block => {
+    const vid = block.dataset.vid;
+    const pid = /^\d+$/.test(vid) ? +vid : null;
+    const finishedPending = _blockData[vid].finishedPending||0;
+    const vals = {
+      staple_id: staple.id,
+      name: block.querySelector('.v-name').value.trim(),
+      brand: block.querySelector('.v-brand').value.trim(),
+      size: block.querySelector('.v-size').value.trim(),
+      rating: block.querySelector('.v-rating').value ? +block.querySelector('.v-rating').value : null,
+      where_to_buy: collectStoresFrom(block),
+      sale_patterns: collectSalesFrom(block),
+      notes: block.querySelector('.v-notes').value.trim(),
+      discontinued_watch: block.querySelector('.v-watch').checked,
+      purchases: _blockData[vid].purchases,
+      on_hand: Math.max(0, +block.querySelector('.v-onhand').value || 0)
+    };
+    const finishedEntries = Array.from({length: finishedPending}, () => ({date: today()}));
+    if(pid != null){
+      const pr = byId(pid);
+      Object.assign(pr, vals);
+      if(finishedEntries.length) (pr.finished_events = pr.finished_events||[]).push(...finishedEntries);
+      keepIds.add(pid);
+    } else {
+      const newId = nextId++;
+      PR.push({id: newId, finished_events: finishedEntries, ...vals});
+      keepIds.add(newId);
+    }
+  });
+  PR = PR.filter(pr => pr.staple_id !== staple.id || keepIds.has(pr.id));
+
   closeModal('product-modal');
   saveToStorage(); render();
 }
-function deleteProduct(){
-  const p = byId(_editing); if(!p) return;
-  if(!confirm(`Delete "${p.name}"?`)) return;
-  P = P.filter(x => x.id !== p.id);
+function deleteStaple(){
+  const s = stapleById(_editing); if(!s) return;
+  if(!confirm(`Delete "${s.name}" and all its tracked variants?`)) return;
+  PR = PR.filter(pr => pr.staple_id !== s.id);
+  S = S.filter(x => x.id !== s.id);
   closeModal('product-modal');
   saveToStorage(); render();
 }
@@ -1153,13 +1406,16 @@ function runImport(){
   if(!rows.length) return;
   const category = document.getElementById('import-category').value;
   const status = document.getElementById('import-status').value;
-  rows.forEach(r => P.push({
-    id: nextId++, name: r.name, brand: r.brand, category, size: '',
-    where_to_buy: r.store ? [{store: r.store, price: null, url: ''}] : [],
-    sale_patterns: [],
-    status, purchases: [], interval_override_days: null, interval_adjust: 1, snooze_until: null,
-    substitutes: '', rating: null, notes: '', discontinued_watch: false
-  }));
+  rows.forEach(r => {
+    const stapleId = nextId++;
+    S.push({id: stapleId, name: r.name, category, status, substitutes: '', interval_override_days: null, interval_adjust: 1, snooze_until: null});
+    PR.push({
+      id: nextId++, staple_id: stapleId, name: r.name, brand: r.brand, size: '',
+      where_to_buy: r.store ? [{store: r.store, price: null, url: ''}] : [],
+      sale_patterns: [], rating: null, notes: '', discontinued_watch: false,
+      purchases: [], on_hand: 0, finished_events: []
+    });
+  });
   closeModal('import-modal');
   saveToStorage(); render();
 }
@@ -1194,7 +1450,7 @@ function setTheme(id){
 
 // ---- EXPORT ----
 function exportJSON(){
-  const blob = new Blob([JSON.stringify({products:P, settings:SETTINGS}, null, 2)], {type:'application/json'});
+  const blob = new Blob([JSON.stringify({staples:S, products:PR, settings:SETTINGS}, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'restock-data.json';
@@ -1265,25 +1521,51 @@ function authGuest(){
   _currentUser = {id:'guest', email:''};
   try{
     const raw = localStorage.getItem('rs-guest-data');
-    if(raw){ const d = JSON.parse(raw); P = d.products||[]; SETTINGS = d.settings||{}; }
+    if(raw){ const d = JSON.parse(raw); S = d.staples||[]; PR = d.products||[]; SETTINGS = d.settings||{}; }
   }catch(e){}
   afterLoad();
   showApp();
 }
+// One-time migration: pre-restructure data was a flat product list with no
+// staples array. Auto-creates one staple per legacy product, carrying its
+// status/substitutes/interval fields up to the staple and leaving the rest
+// (brand, price, rating, notes, purchases) on the product as a variant.
+function migrateIfNeeded(){
+  if(S.length || !PR.length) return;
+  const oldProducts = PR; PR = [];
+  let tmpId = Math.max(0, ...oldProducts.map(p=>p.id||0)) + 1;
+  oldProducts.forEach(op => {
+    const stapleId = tmpId++;
+    S.push({
+      id: stapleId, name: op.name, category: op.category||'other', status: op.status||'stocked',
+      substitutes: op.substitutes||'', interval_override_days: op.interval_override_days ?? null,
+      interval_adjust: op.interval_adjust ?? 1, snooze_until: op.snooze_until ?? null
+    });
+    const prodId = tmpId++;
+    PR.push({
+      id: prodId, staple_id: stapleId, name: op.name, brand: op.brand||'', size: op.size||'',
+      where_to_buy: op.where_to_buy||[], sale_patterns: op.sale_patterns||[],
+      rating: op.rating ?? null, notes: op.notes||'', discontinued_watch: !!op.discontinued_watch,
+      purchases: op.purchases||[], on_hand: 0, finished_events: []
+    });
+  });
+  nextId = tmpId;
+}
 function afterLoad(){
+  migrateIfNeeded();
   if(!SETTINGS || typeof SETTINGS !== 'object') SETTINGS = {};
-  nextId = Math.max(0, ...P.map(p=>p.id)) + 1;
+  nextId = Math.max(nextId||1, 0, ...S.map(s=>s.id), ...PR.map(p=>p.id)) + 1;
   if(SETTINGS.theme) setTheme(SETTINGS.theme);
 }
 async function _doSave(){
   if(!_currentUser) return;
   if(_guestMode){
-    try{ localStorage.setItem('rs-guest-data', JSON.stringify({products:P, settings:SETTINGS})); }catch(e){}
+    try{ localStorage.setItem('rs-guest-data', JSON.stringify({staples:S, products:PR, settings:SETTINGS})); }catch(e){}
     return;
   }
   try{
     const {error} = await sb.from('restock_data').upsert(
-      {user_id:_currentUser.id, products:P, settings:SETTINGS, updated_at:new Date().toISOString()},
+      {user_id:_currentUser.id, staples:S, products:PR, settings:SETTINGS, updated_at:new Date().toISOString()},
       {onConflict:'user_id'});
     if(error) console.error('save error', error);
   }catch(e){ console.error('save error', e); }
@@ -1294,7 +1576,8 @@ async function loadUserData(user){
     const {data,error} = await sb.from('restock_data').select('*').eq('user_id',user.id).maybeSingle();
     if(error){ console.error('loadUserData error:', error); return; }
     if(data){
-      P = data.products||[];
+      S = data.staples||[];
+      PR = data.products||[];
       SETTINGS = data.settings||{};
     }
   }catch(e){ console.error('loadUserData error:', e); }
