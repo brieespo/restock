@@ -70,7 +70,18 @@ Two levels: a **staple** is the general need ("Face wash"); a **product** is a b
   ],
   finished_events: [             // one entry per "Finished one" tap — the usage-rate signal
     {date: "2026-06-01"}
-  ]
+  ],
+  subscription: {                // optional — a fixed-cadence auto-ship for this variant
+    active: true,
+    vendor: "Trade Coffee",
+    price: 34.99,                 // cost per shipment
+    qty_per_shipment: 3,          // units delivered each time
+    interval_days: 14,            // delivery cadence
+    started: "2026-05-15",
+    shipments: [                  // logged via "Log shipment" — also pushes a normal
+      {date: "2026-05-15", on_hand_before: 0}   // `purchases` entry, so price history/
+    ]                                            // shrinkflation tracking see it too
+  }
 }
 ```
 
@@ -82,5 +93,6 @@ Phase 3 (done): 🛒 Shopping mode — needs (running low / out / due soon) grou
 Phase 4 (done, partial): a rule-based rebuying-profile line at the top of Home ("You're loyal to CeraVe and Method, you rebuy ~2 products monthly, and Costco wins on price for 3 of them") that degrades gracefully with sparse data; 🚨 Discontinued watch is now its own standing Home panel (not just a card icon) with one-tap Bought it!/Stop watching. Hub theming is deferred — there's no hub site yet to theme for; the app already shares the sibling apps' CSS-variable theme system, so it's ready to slot in whenever the hub exists.
 Phase 5 (done): restructured to a two-level staples/products model — brand comparison (unit price, rating, avg. purchase gap) once a staple has 2+ variants; added Skincare category, an on-sale checkmark in purchase history, and manually-noted sale patterns (Phase 4.5, folded in here); added inventory depth — on-hand counts, one-tap "Finished one," and a stock-aware radar ("covered until ~date") that only surfaces a staple as it nears zero, falling back to the plain rebuy-pace prediction when on-hand isn't in use yet. The staple's own name field is now always visible and editable (not just once a 2nd variant exists), so a single-brand item can still be labeled by its general type ("Shampoo") rather than just its specific product name.
 Phase 6 (done): paste-a-purchase — paste a purchase link and/or the copied product title + price into the Bought-it modal or a new variant's form; store comes from the link's domain, name/price/size are parsed locally from the pasted text. No scraping, no server, no API keys — just local text parsing, since a static site can't reliably fetch another site's page anyway.
+Phase 7 (done): subscriptions — a variant can be marked as a fixed-cadence auto-ship (vendor, price, quantity per shipment, interval), with a one-tap "Log shipment" that adds the quantity to on-hand and *also* logs a regular purchase (so price history/shrinkflation see subscription price changes for free, no separate tracking needed). A balance check compares the subscription's incoming rate (qty/interval) against the actual usage rate (median gap between "Finished one" taps); once there's enough finish-event data it gives a real verdict — running short, building a surplus, or well matched — falling back to an on-hand trend across logged shipments when finish data is sparse. Surfaced on its own Home dashboard panel and inline on the product card/edit screen.
 
 See `CLAUDE.md` for the full plan.

@@ -12,7 +12,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#f6faf7;--card:#fff;--accent:#2e7d5b;--accent-light:#e4f2ea;--sand:#d3e6da;--text:#243330;--muted:#65786f;--border:#d7e4dc;
---stocked:#2b8a3e;--stocked-bg:#eaf7ed;--running_low:#9a6f20;--running_low-bg:#faf0d7;--out:#b03030;--out-bg:#f9e5e3;--ordered:#1d6f8c;--ordered-bg:#e0f1f5;--predicted:#6b4fa0;--predicted-bg:#efe8f7;--price:#2b7a6e;--price-bg:#e3f2ee;--watch:#c1580f;--watch-bg:#fbe9dc;--star:#e6a817;--star-empty:#dbe2dd}
+--stocked:#2b8a3e;--stocked-bg:#eaf7ed;--running_low:#9a6f20;--running_low-bg:#faf0d7;--out:#b03030;--out-bg:#f9e5e3;--ordered:#1d6f8c;--ordered-bg:#e0f1f5;--predicted:#6b4fa0;--predicted-bg:#efe8f7;--price:#2b7a6e;--price-bg:#e3f2ee;--watch:#c1580f;--watch-bg:#fbe9dc;--sub:#4c5fd5;--sub-bg:#e8eafc;--star:#e6a817;--star-empty:#dbe2dd}
 :root[data-theme="denim"]{--bg:#f7f9fb;--accent:#3b5e8c;--accent-light:#e7eef6;--sand:#d8e2ee;--muted:#68758a;--border:#d9e1eb}
 :root[data-theme="raspberry"]{--bg:#fcf7f8;--accent:#a13e5c;--accent-light:#f7e5ea;--sand:#eed7dd;--muted:#846c73;--border:#ead4da}
 :root[data-theme="mustard"]{--bg:#fdfbf1;--accent:#82680a;--accent-light:#f7efce;--sand:#eee3b8;--muted:#7b7353;--border:#e9dfba}
@@ -65,6 +65,7 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
 .sp-predicted{background:var(--predicted-bg);border-left-color:var(--predicted)}
 .sp-price{background:var(--price-bg);border-left-color:var(--price)}
 .sp-watch{background:var(--watch-bg);border-left-color:var(--watch)}
+.sp-sub{background:var(--sub-bg);border-left-color:var(--sub)}
 .sp-title{display:flex;align-items:center;gap:.4rem;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.2rem}
 .sp-out .sp-title{color:var(--out)}
 .sp-running_low .sp-title{color:var(--running_low)}
@@ -72,6 +73,7 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
 .sp-predicted .sp-title{color:var(--predicted)}
 .sp-price .sp-title{color:var(--price)}
 .sp-watch .sp-title{color:var(--watch)}
+.sp-sub .sp-title{color:var(--sub)}
 .sp-cnt{font-family:'DM Serif Display',Georgia,serif;font-size:1.5rem;letter-spacing:0}
 .sp-item{display:flex;align-items:center;justify-content:space-between;gap:.7rem;padding:.55rem 0;border-top:1px solid rgba(0,0,0,.07);flex-wrap:wrap;cursor:pointer}
 .sp-item:first-of-type{border-top:none}
@@ -86,6 +88,12 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
 .snooze-btn:hover{opacity:.85}
 .pcard-predict{font-size:.8rem;color:var(--predicted);font-weight:600}
 .shrink-chip{font-size:.78rem;color:var(--price);font-weight:600;background:var(--price-bg);display:inline-block;padding:.2rem .6rem;border-radius:6px;margin-top:.1rem;cursor:help}
+.pcard-sub{font-size:.8rem;color:var(--sub);font-weight:600}
+.sub-note{font-size:.78rem;padding:.35rem .6rem;border-radius:8px;margin-top:.35rem;display:inline-block}
+.sub-note-short{background:var(--running_low-bg);color:var(--running_low)}
+.sub-note-excess{background:var(--price-bg);color:var(--price)}
+.sub-note-matched{background:var(--stocked-bg);color:var(--stocked)}
+.v-sub-fields{margin-top:.6rem;padding:.8rem .9rem;background:var(--bg);border-radius:10px}
 .sec-title{font-family:'DM Serif Display',Georgia,serif;font-size:1.3rem;margin:1.4rem 0 .9rem}
 /* Restock rhythm heat-strip */
 .rhythm-strip{display:flex;gap:.4rem;margin-bottom:.5rem}
@@ -510,7 +518,8 @@ const ICONS = {
   clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
   alert:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
   moon:'<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
-  eyeOff:'<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/>'
+  eyeOff:'<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/>',
+  repeat:'<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>'
 };
 const ico = n => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
 
@@ -676,6 +685,76 @@ function shrinkChipHTML(p){
   const s = shrinkflationCheck(p);
   if(!s) return '';
   return `<div class="shrink-chip" title="$${s.from.unitPrice.toFixed(2)}/${esc(s.unit)} on ${fmtDate(s.from.date)} → $${s.to.unitPrice.toFixed(2)}/${esc(s.unit)} on ${fmtDate(s.to.date)}">${ico('trendUp')} +${Math.round(s.pct*100)}%/${esc(s.unit)} since ${fmtDate(s.from.date)}</div>`;
+}
+
+// ---- SUBSCRIPTIONS ----
+// A subscription lives on a product (variant): a fixed price/qty/interval auto-ship.
+// Logging a shipment both (a) records it on subscription.shipments — the cadence/
+// balance signal — and (b) pushes a normal `purchases` entry, so price history and
+// shrinkflation tracking pick up subscription price changes for free.
+function subscribedProducts(){ return PR.filter(pr => pr.subscription?.active); }
+function nextShipmentDate(pr){
+  const sub = pr.subscription; if(!sub || !sub.active) return null;
+  const last = (sub.shipments||[]).map(x=>x.date).sort().slice(-1)[0];
+  return addDays(last || sub.started || today(), sub.interval_days);
+}
+function subscriptionBalanceFrom(sub, finishedDates){
+  const subRate = sub.qty_per_shipment / sub.interval_days;   // units/day arriving
+  const gap = medianGapFromDates(finishedDates);               // days/unit actually used
+  if(gap != null){
+    const useRate = 1/gap;
+    const ratio = useRate / subRate;
+    if(ratio > 1.15) return {verdict:'short', ratio};
+    if(ratio < 0.85) return {verdict:'excess', ratio};
+    return {verdict:'matched', ratio};
+  }
+  // Not enough "Finished one" data yet — fall back to the on-hand trend across
+  // the shipments actually logged so far (no extra taps required to get a signal).
+  const ships = (sub.shipments||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  if(ships.length >= 2){
+    const last2 = ships.slice(-2);
+    if(last2[0].on_hand_before === 0 && last2[1].on_hand_before === 0) return {verdict:'short', ratio:null};
+    if(last2[1].on_hand_before > last2[0].on_hand_before) return {verdict:'excess', ratio:null};
+  }
+  return {verdict:'unknown', ratio:null};
+}
+function subscriptionBalance(pr){
+  const sub = pr.subscription; if(!sub || !sub.active) return null;
+  return subscriptionBalanceFrom(sub, (pr.finished_events||[]).map(f=>f.date));
+}
+const SUB_VERDICT_TEXT = {
+  short: () => `${ico('alert')} Using these faster than shipments arrive — you may run short before the next one.`,
+  excess: () => `${ico('trendUp')} Shipments are arriving faster than you use them — you're building up a surplus.`,
+  matched: () => `${ico('check')} Well matched to how fast you use it.`
+};
+function subLineHTML(pr){
+  const sub = pr.subscription;
+  const next = nextShipmentDate(pr);
+  return `${ico('repeat')} ${esc(sub.vendor||'Subscription')} · ${sub.qty_per_shipment}/${sub.interval_days}d${sub.price?` · $${(+sub.price).toFixed(2)}`:''}${next?` · next ~${fmtDate(next)}`:''}`;
+}
+function logShipmentQuick(id){
+  const pr = byId(id); if(!pr) return;
+  const sub = pr.subscription; if(!sub) return;
+  const onHandBefore = pr.on_hand||0;
+  const date = today();
+  pr.on_hand = onHandBefore + (sub.qty_per_shipment||1);
+  (sub.shipments = sub.shipments||[]).push({date, on_hand_before: onHandBefore});
+  (pr.purchases = pr.purchases||[]).push({date, price: sub.price ?? null, store: sub.vendor||'', size: pr.size||'', on_sale:false});
+  const staple = stapleById(pr.staple_id);
+  if(staple){ staple.status = 'stocked'; staple.snooze_until = null; }
+  saveToStorage(); render();
+}
+function spSubItem(pr){
+  const staple = stapleById(pr.staple_id);
+  const bal = subscriptionBalance(pr);
+  const balNote = bal && bal.verdict !== 'unknown' ? `<div class="sub-note sub-note-${bal.verdict}">${SUB_VERDICT_TEXT[bal.verdict]()}</div>` : '';
+  return `<div class="sp-item" onclick="openEdit(${pr.staple_id})">
+    <div class="sp-info"><strong>${esc(staple?staple.name:pr.name)}</strong>${pr.brand?` <span class="sp-brand">${esc(pr.brand)}</span>`:''}
+      <div class="sp-note">${subLineHTML(pr)}</div>
+      ${balNote}
+    </div>
+    <div class="sp-actions"><button class="buy-btn" onclick="event.stopPropagation();logShipmentQuick(${pr.id})">${ico('repeat')} Log shipment</button></div>
+  </div>`;
 }
 
 // ---- PASTE-A-PURCHASE PARSER ----
@@ -846,6 +925,7 @@ function dashHTML(){
   const predicted = S.filter(isPredictedDue).sort((a,b) => daysUntil(predictedRunout(a)) - daysUntil(predictedRunout(b)));
   const watchList = PR.filter(p => p.discontinued_watch);
   const priceWatch = PR.filter(shrinkflationCheck).sort((a,b) => shrinkflationCheck(b).pct - shrinkflationCheck(a).pct);
+  const subs = subscribedProducts();
   const n = out.length + low.length + ord.length + predicted.length;
   const banner = n
     ? `<div class="dash-banner attention"><span class="dash-num">${n}</span><div>
@@ -861,7 +941,8 @@ function dashHTML(){
   return banner + panel(out,'out',ico('xCircle')+' Out') + panel(low,'running_low',ico('trendDown')+' Running low') + panel(ord,'ordered',ico('package')+' Ordered') +
     panel(predicted,'predicted',ico('clock')+' Predicted due soon', spPredictedItem) +
     panel(watchList,'watch',ico('alert')+' Discontinued watch', spWatchItem) +
-    panel(priceWatch,'price',ico('trendUp')+' Price watch', spPriceItem);
+    panel(priceWatch,'price',ico('trendUp')+' Price watch', spPriceItem) +
+    panel(subs,'sub',ico('repeat')+' Subscriptions', spSubItem);
 }
 let _screen = 'home';
 function showScreen(s){
@@ -926,6 +1007,7 @@ function stapleCardHTML(staple){
       ${stores?`<div class="pcard-stores">${ico('cart')} ${stores}</div>`:''}
       ${onHandBit}
       ${predictedHint}
+      ${pr && pr.subscription?.active ? `<div class="pcard-sub">${subLineHTML(pr)}</div>` : ''}
       ${pr?shrinkChipHTML(pr):''}
       ${staple.substitutes?`<div class="pcard-subs">Backup: ${esc(staple.substitutes)}</div>`:''}
       ${pr && pr.notes?`<div class="pcard-notes">${esc(pr.notes)}</div>`:''}
@@ -1146,7 +1228,7 @@ let _variantBlockSeq = 1;
 
 function variantBlockHTML(pr){
   const vid = pr ? String(pr.id) : 'new'+(_variantBlockSeq++);
-  _blockData[vid] = { purchases: pr ? JSON.parse(JSON.stringify(pr.purchases||[])) : [], finishedPending: 0 };
+  _blockData[vid] = { purchases: pr ? JSON.parse(JSON.stringify(pr.purchases||[])) : [], finishedPending: 0, shipmentsPending: [] };
   return `<div class="variant-block" data-vid="${vid}">
     ${!pr ? `<div class="field">
       <label>Paste the product link and/or the title + price you copied</label>
@@ -1166,6 +1248,21 @@ function variantBlockHTML(pr){
     <div class="field-row">
       <div class="field"><label>On hand</label><input class="v-onhand" type="number" min="0" step="1" value="${pr?.on_hand ?? 0}"></div>
       <div class="field" style="display:flex;align-items:flex-end;padding-bottom:.85rem">${pr ? `<button class="btn btn-ghost" type="button" onclick="finishOneInForm('${vid}')">${ico('trendDown')} Finished one</button>` : ''}</div>
+    </div>
+    <div class="form-sec">Subscription</div>
+    <label class="check-row" style="margin-bottom:.6rem"><input type="checkbox" class="v-sub-active" ${pr?.subscription?.active?'checked':''} onchange="toggleSubFields(this)"> This is a subscription (auto-ships on a schedule)</label>
+    <div class="v-sub-fields" style="${pr?.subscription?.active?'':'display:none'}">
+      <div class="field-row">
+        <div class="field"><label>Vendor / source</label><input class="v-sub-vendor" value="${esc(pr?.subscription?.vendor||'')}" placeholder="e.g. Trade Coffee"></div>
+        <div class="field"><label>Price per shipment</label><input class="v-sub-price" type="number" step="0.01" min="0" value="${pr?.subscription?.price??''}" placeholder="$"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Quantity per shipment</label><input class="v-sub-qty" type="number" min="1" step="1" value="${pr?.subscription?.qty_per_shipment??1}"></div>
+        <div class="field"><label>Every ~ how many days</label><input class="v-sub-interval" type="number" min="1" step="1" value="${pr?.subscription?.interval_days??''}" placeholder="e.g. 14"></div>
+        <div class="field"><label>Started</label><input class="v-sub-started" type="date" value="${pr?.subscription?.started||today()}"></div>
+      </div>
+      ${pr ? `<button class="btn btn-ghost" type="button" onclick="logShipmentInForm('${vid}')">${ico('repeat')} Log shipment now</button>` : ''}
+      <div class="v-sub-balance"></div>
     </div>
     <div class="form-sec">Where to buy</div>
     <div class="v-stores"></div>
@@ -1280,6 +1377,39 @@ function finishOneInForm(vid){
   input.value = Math.max(0, (+input.value||0) - 1);
   _blockData[vid].finishedPending = (_blockData[vid].finishedPending||0) + 1;
 }
+function toggleSubFields(cb){
+  cb.closest('.variant-block').querySelector('.v-sub-fields').style.display = cb.checked ? '' : 'none';
+}
+function logShipmentInForm(vid){
+  const block = document.querySelector(`.variant-block[data-vid="${vid}"]`);
+  const qty = Math.max(1, +block.querySelector('.v-sub-qty').value || 1);
+  const price = block.querySelector('.v-sub-price').value ? +block.querySelector('.v-sub-price').value : null;
+  const vendor = block.querySelector('.v-sub-vendor').value.trim();
+  const size = block.querySelector('.v-size').value.trim();
+  const onHandInput = block.querySelector('.v-onhand');
+  const onHandBefore = +onHandInput.value || 0;
+  onHandInput.value = onHandBefore + qty;
+  const date = today();
+  _blockData[vid].shipmentsPending.push({date, on_hand_before: onHandBefore});
+  _blockData[vid].purchases.push({date, price, store: vendor, size, on_sale:false});
+  renderBlockPurchaseHistory(vid, block);
+  renderSubBalance(vid, block);
+  renderBrandCompareIfNeeded();
+}
+function renderSubBalance(vid, block){
+  const wrap = block.querySelector('.v-sub-balance');
+  const qty = +block.querySelector('.v-sub-qty').value || 0;
+  const interval = +block.querySelector('.v-sub-interval').value || 0;
+  if(!qty || !interval){ wrap.innerHTML = ''; return; }
+  const pid = /^\d+$/.test(vid) ? +vid : null;
+  const pr = pid != null ? byId(pid) : null;
+  const finishedDates = (pr?.finished_events||[]).map(f=>f.date);
+  const shipments = [...((pr?.subscription?.shipments)||[]), ...(_blockData[vid].shipmentsPending||[])];
+  const bal = subscriptionBalanceFrom({qty_per_shipment:qty, interval_days:interval, shipments}, finishedDates);
+  wrap.innerHTML = bal.verdict !== 'unknown'
+    ? `<div class="sub-note sub-note-${bal.verdict}">${SUB_VERDICT_TEXT[bal.verdict]()}</div>`
+    : `<div class="field-hint">Log a couple of shipments (or tap Finished one over time) to see if this keeps pace.</div>`;
+}
 function addVariantClicked(){
   const nameField = document.getElementById('f-staple-name');
   if(!nameField.value.trim()){
@@ -1379,6 +1509,7 @@ function openEdit(id){
       addStoreRowTo(block); addSaleRowTo(block);
     }
     renderBlockPurchaseHistory(block.dataset.vid, block);
+    if(pr?.subscription?.active) renderSubBalance(block.dataset.vid, block);
   });
   renderBrandCompareIfNeeded();
   openModal('product-modal');
@@ -1404,6 +1535,20 @@ function saveStaple(){
     const vid = block.dataset.vid;
     const pid = /^\d+$/.test(vid) ? +vid : null;
     const finishedPending = _blockData[vid].finishedPending||0;
+    const subActive = block.querySelector('.v-sub-active').checked;
+    let subscription = null;
+    if(subActive){
+      const priorShipments = (pid != null && byId(pid)?.subscription?.shipments) || [];
+      subscription = {
+        active: true,
+        vendor: block.querySelector('.v-sub-vendor').value.trim(),
+        price: block.querySelector('.v-sub-price').value ? +block.querySelector('.v-sub-price').value : null,
+        qty_per_shipment: Math.max(1, +block.querySelector('.v-sub-qty').value || 1),
+        interval_days: Math.max(1, +block.querySelector('.v-sub-interval').value || 1),
+        started: block.querySelector('.v-sub-started').value || today(),
+        shipments: [...priorShipments, ...(_blockData[vid].shipmentsPending||[])]
+      };
+    }
     const vals = {
       staple_id: staple.id,
       name: block.querySelector('.v-name').value.trim(),
@@ -1415,7 +1560,8 @@ function saveStaple(){
       notes: block.querySelector('.v-notes').value.trim(),
       discontinued_watch: block.querySelector('.v-watch').checked,
       purchases: _blockData[vid].purchases,
-      on_hand: Math.max(0, +block.querySelector('.v-onhand').value || 0)
+      on_hand: Math.max(0, +block.querySelector('.v-onhand').value || 0),
+      subscription
     };
     const finishedEntries = Array.from({length: finishedPending}, () => ({date: today()}));
     if(pid != null){

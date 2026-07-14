@@ -73,9 +73,20 @@ A staple with exactly one variant is displayed and edited exactly like a single 
   ],
   finished_events: [              // one entry per "Finished one" tap — the usage-rate signal
     {date: "2026-06-01"}
-  ]
+  ],
+  subscription: {                 // optional — a fixed-cadence auto-ship for this variant
+    active: true,
+    vendor: "Trade Coffee", price: 34.99,       // cost per shipment
+    qty_per_shipment: 3, interval_days: 14,     // e.g. 3 bags every 2 weeks
+    started: "2026-05-15",
+    shipments: [{date: "2026-05-15", on_hand_before: 0}]  // "Log shipment" also pushes
+  }                                                        // a normal purchases entry
 }
 ```
+
+### Subscriptions (fixed-cadence auto-ships)
+
+A variant can be flagged as a subscription instead of (or alongside) one-off purchases: vendor, price per shipment, quantity per shipment, and interval. "Log shipment" is one tap — it adds the quantity to `on_hand` *and* pushes a normal `purchases` entry, so price history and shrinkflation detection see subscription price changes without any separate code path. The balance check compares the subscription's incoming rate (`qty_per_shipment / interval_days`) against the actual usage rate (median gap between `finished_events`) — >15% faster usage than incoming supply reads as "running short," >15% slower reads as "building a surplus," otherwise "well matched." With too few finish-events to compute a usage rate, it falls back to comparing `on_hand_before` across the last two logged shipments (rising = surplus, both zero = short) rather than showing nothing.
 
 ### The interval engine (computed, the app's requirements-engine equivalent)
 
