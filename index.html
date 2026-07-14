@@ -25,6 +25,10 @@ header p{font-family:'DM Serif Display',Georgia,serif;font-style:italic;font-siz
 .btn{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem 1.1rem;border:none;border-radius:8px;font-size:.875rem;font-weight:600;cursor:pointer;transition:opacity .15s;font-family:inherit}
 .btn:hover{opacity:.88}
 .ico{width:1em;height:1em;vertical-align:-.125em;flex-shrink:0}
+.app-notice{position:sticky;top:0;z-index:150;display:flex;align-items:center;justify-content:center;gap:.6rem;text-align:center;padding:.6rem 1rem;font-size:.85rem;font-weight:600}
+.app-notice.warn{background:var(--running_low-bg);color:var(--running_low);border-bottom:1px solid var(--running_low)}
+.app-notice.info{background:var(--price-bg);color:var(--price);border-bottom:1px solid var(--price)}
+.app-notice .ico{width:1.1em;height:1.1em}
 .btn-accent{background:var(--accent);color:#fff}
 .btn-outline{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.5)}
 .btn-outline.active{background:#fff;color:var(--accent);border-color:#fff}
@@ -263,6 +267,7 @@ main{max-width:1100px;margin:0 auto;padding:1.75rem 2rem 3rem}
 <script>try{const t=localStorage.getItem('rs-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
 </head>
 <body>
+<div id="app-notice" class="app-notice" style="display:none" onclick="hideNotice()"></div>
 <div id="auth-overlay">
   <div class="auth-box">
     <div class="auth-logo"><svg class="logo-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10h16l-1.3 8.8a2 2 0 0 1-2 1.7H7.3a2 2 0 0 1-2-1.7Z"/><path d="M8 10a4 4 0 0 1 8 0"/><path d="M9 14v3"/><path d="M15 14v3"/></svg></div>
@@ -1777,30 +1782,85 @@ function afterLoad(){
   nextId = Math.max(nextId||1, 0, ...S.map(s=>s.id), ...PR.map(p=>p.id)) + 1;
   if(SETTINGS.theme) setTheme(SETTINGS.theme);
 }
+// ---- SYNC SAFETY NET ----
+// Signed-in saves used to have no local fallback at all — if the Supabase
+// upsert failed (wrong schema, network blip, etc.) the failure was only ever
+// console.error'd, and a refresh would reload from whatever the server last
+// had, silently discarding anything that never made it up. Now every save
+// attempt writes a local cache FIRST, a failed upsert shows a persistent
+// banner and retries with backoff instead of failing silently, and load-time
+// compares the local cache against the server copy — if the cache is richer
+// (more items) than the server, that means an earlier save never landed, so
+// the cache wins and gets pushed back up rather than being clobbered.
+function localCacheKey(uid){ return `rs-synccache-${uid}`; }
+function readLocalCache(uid){
+  try{ const raw = localStorage.getItem(localCacheKey(uid)); return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
+}
+function writeLocalCache(uid, payload){
+  try{ localStorage.setItem(localCacheKey(uid), JSON.stringify(payload)); }catch(e){}
+}
+function showNotice(text, kind){
+  const el = document.getElementById('app-notice');
+  el.innerHTML = `${ico(kind==='warn'?'alert':'check')} ${esc(text)}`;
+  el.className = 'app-notice ' + kind;
+  el.style.display = '';
+}
+function hideNotice(){ document.getElementById('app-notice').style.display = 'none'; }
+let _syncFailed = false, _syncRetryTimer = null, _syncRetryDelay = 8000;
+function scheduleSyncRetry(){
+  clearTimeout(_syncRetryTimer);
+  _syncRetryTimer = setTimeout(_doSave, _syncRetryDelay);
+  _syncRetryDelay = Math.min(_syncRetryDelay * 1.6, 60000);
+}
+function showSyncError(){
+  _syncFailed = true;
+  showNotice("Couldn't sync to the cloud — your changes are saved on this device and will keep retrying.", 'warn');
+  scheduleSyncRetry();
+}
+function clearSyncError(){
+  _syncRetryDelay = 8000;
+  clearTimeout(_syncRetryTimer);
+  if(!_syncFailed) return;
+  _syncFailed = false;
+  hideNotice();
+}
 async function _doSave(){
   if(!_currentUser) return;
   if(_guestMode){
     try{ localStorage.setItem('rs-guest-data', JSON.stringify({staples:S, products:PR, settings:SETTINGS})); }catch(e){}
     return;
   }
+  writeLocalCache(_currentUser.id, {staples:S, products:PR, settings:SETTINGS});
   try{
     const {error} = await sb.from('restock_data').upsert(
       {user_id:_currentUser.id, staples:S, products:PR, settings:SETTINGS, updated_at:new Date().toISOString()},
       {onConflict:'user_id'});
-    if(error) console.error('save error', error);
-  }catch(e){ console.error('save error', e); }
+    if(error){ console.error('save error', error); showSyncError(); }
+    else clearSyncError();
+  }catch(e){ console.error('save error', e); showSyncError(); }
 }
 function saveToStorage(){ clearTimeout(_saveTimer); _saveTimer = setTimeout(_doSave, 600); }
 async function loadUserData(user){
+  let remote = null, remoteOk = false;
   try{
     const {data,error} = await sb.from('restock_data').select('*').eq('user_id',user.id).maybeSingle();
-    if(error){ console.error('loadUserData error:', error); return; }
-    if(data){
-      S = data.staples||[];
-      PR = data.products||[];
-      SETTINGS = data.settings||{};
-    }
+    if(error) console.error('loadUserData error:', error);
+    else { remote = data; remoteOk = true; }
   }catch(e){ console.error('loadUserData error:', e); }
+
+  const cached = readLocalCache(user.id);
+  const cachedCount = cached ? (cached.staples||[]).length + (cached.products||[]).length : -1;
+  const remoteCount = (remoteOk && remote) ? (remote.staples||[]).length + (remote.products||[]).length : -1;
+
+  if(cached && (!remoteOk || cachedCount > remoteCount)){
+    S = cached.staples||[]; PR = cached.products||[]; SETTINGS = cached.settings||{};
+    if(!remoteOk) showNotice("Couldn't reach the server — showing your last saved copy on this device.", 'warn');
+    else showNotice(`Restored ${cachedCount} item${cachedCount===1?'':'s'} from this device that hadn't finished syncing — reconnecting now.`, 'info');
+    saveToStorage();
+  } else if(remote){
+    S = remote.staples||[]; PR = remote.products||[]; SETTINGS = remote.settings||{};
+    writeLocalCache(user.id, {staples:S, products:PR, settings:SETTINGS});
+  }
   afterLoad();
 }
 

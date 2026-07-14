@@ -124,6 +124,7 @@ A variant can be flagged as a subscription instead of (or alongside) one-off pur
 2. **Phase 2:** purchase logging ("Bought it"), interval engine with snooze feedback, dashboard with headline banner + Reorder Radar panel.
 3. **Phase 3:** shopping mode by store, price/unit history + shrinkflation callouts, restock rhythm heat-strip.
 4. **Phase 4:** polish — trusted-brands line, discontinued watch, hub theming.
+5. **Phase 8 (sync safety net, done):** every signed-in save writes a local cache alongside the Supabase upsert; a failed save shows a sticky banner and retries with exponential backoff instead of failing silently; on load, a richer/newer local cache wins over a leaner or unreachable remote copy, with a visible notice either way and an immediate re-push. Added after a schema mismatch (`staples` column missing on the live table) caused silent save failures with no local fallback, losing a session's unsaved product entries on refresh (2026-07-14). See README's "Sync safety net" section.
 
 ## Open items (confirm with Bri)
 
