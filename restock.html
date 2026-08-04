@@ -1781,6 +1781,28 @@ function afterLoad(){
   if(!SETTINGS || typeof SETTINGS !== 'object') SETTINGS = {};
   nextId = Math.max(nextId||1, 0, ...S.map(s=>s.id), ...PR.map(p=>p.id)) + 1;
   if(SETTINGS.theme) setTheme(SETTINGS.theme);
+  applyPaceRecalcMarks();
+}
+// The agenda app's assistant can mark a staple Out ("I'm out of coffee"), but
+// the pace tightening setStatus() does needs predictedRunout(), which reads
+// on-hand quantities and finish events that only exist here. So that app just
+// stamps pace_recalc_from with the date it went out, and we apply our own
+// adjustment on next load — the prediction logic stays in one place instead of
+// being copied into an app that would drift from it.
+function applyPaceRecalcMarks(){
+  let changed = false;
+  S.forEach(s => {
+    if(!s.pace_recalc_from) return;
+    const run = predictedRunout(s);
+    // Measure from the day it actually ran out, not today: opening this app a
+    // week later shouldn't wash out a signal that was real when it happened.
+    if(run != null && dayDiff(s.pace_recalc_from, run) > 3){
+      s.interval_adjust = Math.max((s.interval_adjust ?? 1) * 0.85, 0.5);
+    }
+    delete s.pace_recalc_from;
+    changed = true;
+  });
+  if(changed) saveToStorage();
 }
 // ---- SYNC SAFETY NET ----
 // Signed-in saves used to have no local fallback at all — if the Supabase
