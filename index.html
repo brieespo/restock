@@ -1811,15 +1811,28 @@ function applyPaceRecalcMarks(){
 // had, silently discarding anything that never made it up. Now every save
 // attempt writes a local cache FIRST, a failed upsert shows a persistent
 // banner and retries with backoff instead of failing silently, and load-time
-// compares the local cache against the server copy — if the cache is richer
-// (more items) than the server, that means an earlier save never landed, so
-// the cache wins and gets pushed back up rather than being clobbered.
+// compares the local cache against the server copy.
+//
+// That comparison used to be by item count — a cache holding more items than
+// the server was taken as proof a save never landed. It isn't. A cache that is
+// simply old can hold more items than a server another device has since pruned,
+// and then it wins the load and gets pushed back up, destroying that device's
+// work. The cache now records the stamp of the write it holds and whether that
+// write was ever confirmed, which answers the question the count was guessing at.
 function localCacheKey(uid){ return `rs-synccache-${uid}`; }
 function readLocalCache(uid){
   try{ const raw = localStorage.getItem(localCacheKey(uid)); return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
 }
-function writeLocalCache(uid, payload){
-  try{ localStorage.setItem(localCacheKey(uid), JSON.stringify(payload)); }catch(e){}
+function writeLocalCache(uid, updatedAt, synced){
+  try{ localStorage.setItem(localCacheKey(uid), JSON.stringify({
+    staples:S, products:PR, settings:SETTINGS, updated_at:updatedAt, synced:!!synced
+  })); }catch(e){}
+}
+function markCacheSynced(uid, stamp){
+  const c = readLocalCache(uid);
+  // Only if the cache still holds the write we just confirmed — an edit made
+  // while the request was in flight has to stay dirty.
+  if(c && c.updated_at === stamp){ c.synced = true; try{ localStorage.setItem(localCacheKey(uid), JSON.stringify(c)); }catch(e){} }
 }
 function showNotice(text, kind){
   const el = document.getElementById('app-notice');
@@ -1852,16 +1865,23 @@ async function _doSave(){
     try{ localStorage.setItem('rs-guest-data', JSON.stringify({staples:S, products:PR, settings:SETTINGS})); }catch(e){}
     return;
   }
-  writeLocalCache(_currentUser.id, {staples:S, products:PR, settings:SETTINGS});
+  // One stamp for both copies, so a later load can compare them directly.
+  const stamp = new Date().toISOString();
+  writeLocalCache(_currentUser.id, stamp, false);
   try{
     const {error} = await sb.from('restock_data').upsert(
-      {user_id:_currentUser.id, staples:S, products:PR, settings:SETTINGS, updated_at:new Date().toISOString()},
+      {user_id:_currentUser.id, staples:S, products:PR, settings:SETTINGS, updated_at:stamp},
       {onConflict:'user_id'});
     if(error){ console.error('save error', error); showSyncError(); }
-    else clearSyncError();
+    else { markCacheSynced(_currentUser.id, stamp); clearSyncError(); }
   }catch(e){ console.error('save error', e); showSyncError(); }
 }
-function saveToStorage(){ clearTimeout(_saveTimer); _saveTimer = setTimeout(_doSave, 600); }
+function saveToStorage(){ clearTimeout(_saveTimer); _saveTimer = setTimeout(() => { _saveTimer = null; _doSave(); }, 600); }
+// A phone is suspended the instant it's locked or swiped away, which can be
+// well inside the debounce — those edits never reached even localStorage.
+function flushSave(){ if(_saveTimer){ clearTimeout(_saveTimer); _saveTimer = null; _doSave(); } }
+document.addEventListener('visibilitychange', () => { if(document.hidden) flushSave(); });
+window.addEventListener('pagehide', flushSave);
 async function loadUserData(user){
   let remote = null, remoteOk = false;
   try{
@@ -1871,17 +1891,26 @@ async function loadUserData(user){
   }catch(e){ console.error('loadUserData error:', e); }
 
   const cached = readLocalCache(user.id);
-  const cachedCount = cached ? (cached.staples||[]).length + (cached.products||[]).length : -1;
-  const remoteCount = (remoteOk && remote) ? (remote.staples||[]).length + (remote.products||[]).length : -1;
+  // Prefer the cache only when the server is unreachable, or when it holds a
+  // write that provably never landed and is newer than the server's copy. A
+  // cache written before this change has no `synced` field and so never
+  // qualifies, which is the safe default and heals any state the old
+  // count-based rule left behind.
+  const unsynced = !!(cached && cached.synced === false && cached.updated_at);
+  const cacheIsNewer = unsynced && (!remote || !remote.updated_at || cached.updated_at > remote.updated_at);
 
-  if(cached && (!remoteOk || cachedCount > remoteCount)){
+  if(cached && !remoteOk){
     S = cached.staples||[]; PR = cached.products||[]; SETTINGS = cached.settings||{};
-    if(!remoteOk) showNotice("Couldn't reach the server — showing your last saved copy on this device.", 'warn');
-    else showNotice(`Restored ${cachedCount} item${cachedCount===1?'':'s'} from this device that hadn't finished syncing — reconnecting now.`, 'info');
+    showNotice("Couldn't reach the server — showing your last saved copy on this device.", 'warn');
+    // No save here: we don't know what the server holds, so pushing this copy
+    // blind is exactly the overwrite this is meant to prevent.
+  } else if(cacheIsNewer){
+    S = cached.staples||[]; PR = cached.products||[]; SETTINGS = cached.settings||{};
+    showNotice("Restored changes from this device that hadn't finished syncing — reconnecting now.", 'info');
     saveToStorage();
   } else if(remote){
     S = remote.staples||[]; PR = remote.products||[]; SETTINGS = remote.settings||{};
-    writeLocalCache(user.id, {staples:S, products:PR, settings:SETTINGS});
+    writeLocalCache(user.id, remote.updated_at || new Date().toISOString(), true);
   }
   afterLoad();
 }
