@@ -562,7 +562,31 @@ const THEMES = [
 let S = [];           // staples
 let PR = [];          // products (variants)
 let SETTINGS = {};
-let nextId = 1;
+
+/* ==== SYNC-CORE v3 — sync metadata =====================================
+   Phase A of cross-device merge: written everywhere, read nowhere. See the
+   agenda's copy for the full reasoning; the rules are identical because the
+   merge that consumes this has to be identical.
+   ====================================================================== */
+const SYNC_PROTOCOL_V = 2;
+const DEVICE_ID = (() => {
+  try{
+    let d = localStorage.getItem('rs-device-id');
+    if(!d){ d = Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4);
+            localStorage.setItem('rs-device-id', d); }
+    return d;
+  }catch(e){ return 'nostore'; }
+})();
+function newId(){ return Math.floor(Date.now()/1000) * 1e6 + Math.floor(Math.random()*1e6); }
+const nowStamp = () => new Date().toISOString();
+// User-initiated content changes only. Never from load-time normalization —
+// migrateIfNeeded and applyPaceRecalcMarks run on every load and must not stamp.
+function touch(o){ if(o && typeof o === 'object') o._u = nowStamp(); return o; }
+function tombstone(list, key){
+  if(!SETTINGS._tomb) SETTINGS._tomb = {};
+  if(!SETTINGS._tomb[list]) SETTINGS._tomb[list] = {};
+  SETTINGS._tomb[list][String(key)] = nowStamp();
+}
 let _tab = 'all';
 let _editing = null;   // staple id open in product-modal
 
@@ -1137,6 +1161,7 @@ function setStatus(id, status){
   }
   s.status = status;
   s.snooze_until = null;
+  touch(s);
   saveToStorage(); render();
 }
 
@@ -1144,6 +1169,7 @@ function setStatus(id, status){
 function finishOne(id){
   const pr = byId(id); if(!pr) return;
   pr.on_hand = Math.max(0, (pr.on_hand||0) - 1);
+  touch(pr);
   (pr.finished_events = pr.finished_events||[]).push({date: today()});
   saveToStorage(); render();
 }
@@ -1533,7 +1559,7 @@ function saveStaple(){
   };
   let staple;
   if(_editing != null){ staple = stapleById(_editing); Object.assign(staple, stapleVals); }
-  else { staple = {id: nextId++, interval_adjust: 1, snooze_until: null, ...stapleVals}; S.push(staple); }
+  else { staple = touch({id: newId(), interval_adjust: 1, snooze_until: null, ...stapleVals}); S.push(staple); }
 
   const keepIds = new Set();
   blocks.forEach(block => {
@@ -1571,15 +1597,16 @@ function saveStaple(){
     const finishedEntries = Array.from({length: finishedPending}, () => ({date: today()}));
     if(pid != null){
       const pr = byId(pid);
-      Object.assign(pr, vals);
+      touch(Object.assign(pr, vals));
       if(finishedEntries.length) (pr.finished_events = pr.finished_events||[]).push(...finishedEntries);
       keepIds.add(pid);
     } else {
-      const newId = nextId++;
-      PR.push({id: newId, finished_events: finishedEntries, ...vals});
-      keepIds.add(newId);
+      const prId = newId();
+      PR.push(touch({id: prId, finished_events: finishedEntries, ...vals}));
+      keepIds.add(prId);
     }
   });
+  PR.forEach(pr => { if(pr.staple_id === staple.id && !keepIds.has(pr.id)) tombstone('products', pr.id); });
   PR = PR.filter(pr => pr.staple_id !== staple.id || keepIds.has(pr.id));
 
   closeModal('product-modal');
@@ -1588,6 +1615,8 @@ function saveStaple(){
 function deleteStaple(){
   const s = stapleById(_editing); if(!s) return;
   if(!confirm(`Delete "${s.name}" and all its tracked variants?`)) return;
+  PR.forEach(pr => { if(pr.staple_id === s.id) tombstone('products', pr.id); });
+  tombstone('staples', s.id);
   PR = PR.filter(pr => pr.staple_id !== s.id);
   S = S.filter(x => x.id !== s.id);
   closeModal('product-modal');
@@ -1632,10 +1661,10 @@ function runImport(){
   const category = document.getElementById('import-category').value;
   const status = document.getElementById('import-status').value;
   rows.forEach(r => {
-    const stapleId = nextId++;
+    const stapleId = newId();
     S.push({id: stapleId, name: r.name, category, status, substitutes: '', interval_override_days: null, interval_adjust: 1, snooze_until: null});
     PR.push({
-      id: nextId++, staple_id: stapleId, name: r.name, brand: r.brand, size: '',
+      id: newId(), staple_id: stapleId, name: r.name, brand: r.brand, size: '',
       where_to_buy: r.store ? [{store: r.store, price: null, url: ''}] : [],
       sale_patterns: [], rating: null, notes: '', discontinued_watch: false,
       purchases: [], on_hand: 0, finished_events: []
@@ -1758,15 +1787,14 @@ function authGuest(){
 function migrateIfNeeded(){
   if(S.length || !PR.length) return;
   const oldProducts = PR; PR = [];
-  let tmpId = Math.max(0, ...oldProducts.map(p=>p.id||0)) + 1;
   oldProducts.forEach(op => {
-    const stapleId = tmpId++;
+    const stapleId = newId();
     S.push({
       id: stapleId, name: op.name, category: op.category||'other', status: op.status||'stocked',
       substitutes: op.substitutes||'', interval_override_days: op.interval_override_days ?? null,
       interval_adjust: op.interval_adjust ?? 1, snooze_until: op.snooze_until ?? null
     });
-    const prodId = tmpId++;
+    const prodId = newId();
     PR.push({
       id: prodId, staple_id: stapleId, name: op.name, brand: op.brand||'', size: op.size||'',
       where_to_buy: op.where_to_buy||[], sale_patterns: op.sale_patterns||[],
@@ -1774,12 +1802,10 @@ function migrateIfNeeded(){
       purchases: op.purchases||[], on_hand: 0, finished_events: []
     });
   });
-  nextId = tmpId;
 }
 function afterLoad(){
   migrateIfNeeded();
   if(!SETTINGS || typeof SETTINGS !== 'object') SETTINGS = {};
-  nextId = Math.max(nextId||1, 0, ...S.map(s=>s.id), ...PR.map(p=>p.id)) + 1;
   if(SETTINGS.theme) setTheme(SETTINGS.theme);
   applyPaceRecalcMarks();
 }
@@ -1867,6 +1893,7 @@ async function _doSave(){
   }
   // One stamp for both copies, so a later load can compare them directly.
   const stamp = new Date().toISOString();
+  SETTINGS._sync = {v: SYNC_PROTOCOL_V, w: DEVICE_ID, at: stamp};
   writeLocalCache(_currentUser.id, stamp, false);
   try{
     const {error} = await sb.from('restock_data').upsert(
