@@ -181,6 +181,16 @@ Rules to preserve:
   whose result is *not* idempotent — see agenda's `syncRestockOutTasks`, which
   keeps its save because its ledger is real state.
 - Never let a refetch or Realtime update replace memory while a save is pending.
+- Restock gained both a refetch and a Realtime subscription on 2026-08-08; it
+  had neither. An open tab never learned about another device's changes, and
+  because a save writes the whole row, its next save wrote that stale memory
+  straight over them — losing an edit needed only one device to have the page
+  sitting open. It also guards on an **open editor modal**, which the siblings
+  do not need in the same way: the staple form holds references into `S`/`PR`,
+  so replacing those arrays underneath it would make the subsequent save write
+  against objects no longer in the arrays. Agenda and time-tracker have the
+  same theoretical exposure through their own modals and have NOT been given
+  this guard.
 
 ## Cross-device merge — where it stands
 

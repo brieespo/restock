@@ -1761,6 +1761,7 @@ function showApp(){
   document.getElementById('user-info').style.display='block';
   document.getElementById('user-email').textContent = _guestMode ? 'guest (data stays on this device)' : _currentUser.email;
   render();
+  subscribeRealtime();
 }
 let _sessionHandled = false;
 async function handleAuthSession(session){
@@ -1963,7 +1964,62 @@ function flushSaveLeaving(){
   clearTimeout(_saveTimer); _saveTimer = null;
   _doSave({leaving: true});
 }
-document.addEventListener('visibilitychange', () => { if(document.hidden) flushSaveLeaving(); });
+/* ---- DATA FRESHNESS: refetch on focus/visibility + Realtime ----
+   This app had neither until now, which meant an open tab never learned about
+   another device's changes — and because a save writes the whole row, its next
+   save wrote that stale memory straight over them. Losing an edit needed only
+   one device to have this page sitting open.
+
+   Two mechanisms, not redundant: focus/visibility catches "I stepped away and
+   came back" even if the socket died while backgrounded (mobile browsers kill
+   background sockets aggressively); Realtime catches "another device changed
+   something" while this tab stays in the foreground the whole time, which a
+   focus listener alone would never see. */
+let _lastRefetch = 0;
+function editorIsOpen(){ return !!document.querySelector('.modal-bg.open'); }
+async function refreshFromSupabase(){
+  if(!_currentUser || _guestMode) return;
+  if(Date.now() - _lastRefetch < 2000) return;   // focus + visibilitychange often fire together
+  // A refetch replaces everything in memory, so it must never run while this
+  // device is holding work the server hasn't got — that would drop the edit.
+  // Push it instead; the next focus or Realtime tick brings the server's copy.
+  if(savePending()){ flushSave(); return; }
+  // Nor while a staple is open for editing: the form holds references into the
+  // arrays we are about to replace, so saving it afterwards would write against
+  // objects that are no longer the ones in S/PR. The next focus or tick picks
+  // it up once the modal is closed.
+  if(editorIsOpen()) return;
+  _lastRefetch = Date.now();
+  try{
+    const {data,error} = await sb.from('restock_data').select('*').eq('user_id',_currentUser.id).maybeSingle();
+    if(error || !data) return;
+    S = data.staples||[]; PR = data.products||[]; SETTINGS = data.settings||{};
+    writeLocalCache(_currentUser.id, data.updated_at || new Date().toISOString(), true);
+    afterLoad();
+    render();
+  }catch(e){ console.error('refreshFromSupabase error:', e); }
+}
+let _realtimeChannel = null;
+function subscribeRealtime(){
+  if(!_currentUser || _guestMode || _realtimeChannel) return;
+  _realtimeChannel = sb.channel('restock_data_' + _currentUser.id)
+    .on('postgres_changes', {event:'UPDATE', schema:'public', table:'restock_data', filter:`user_id=eq.${_currentUser.id}`}, (payload) => {
+      if(savePending()){ flushSave(); return; }   // same reason as refreshFromSupabase
+      if(editorIsOpen()) return;
+      const row = payload.new;
+      S = row.staples||[]; PR = row.products||[]; SETTINGS = row.settings||{};
+      writeLocalCache(_currentUser.id, row.updated_at || new Date().toISOString(), true);
+      afterLoad();
+      render();
+    })
+    .subscribe();
+}
+
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden){ flushSaveLeaving(); return; }
+  refreshFromSupabase();
+});
+window.addEventListener('focus', refreshFromSupabase);
 window.addEventListener('pagehide', flushSaveLeaving);
 async function loadUserData(user){
   let remote = null, remoteOk = false;
