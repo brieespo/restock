@@ -1828,7 +1828,15 @@ function applyPaceRecalcMarks(){
     delete s.pace_recalc_from;
     changed = true;
   });
-  if(changed) saveToStorage();
+  // Deliberately no save. This runs on every load, and a load-time save
+  // republishes the row with a fresh updated_at — which is how a passive device
+  // came to outrank one holding real unsynced work and destroyed it (agenda,
+  // 2026-08-08). Dropping the save is safe here specifically because the result
+  // is idempotent from the server's state: both the adjustment and the deletion
+  // of the mark stay in memory, so the next load recomputes the identical value
+  // from the same untouched base rather than compounding 0.85 each time. The
+  // next genuine edit persists it, and until then the mark simply stays pending.
+  return changed;
 }
 // ---- SYNC SAFETY NET ----
 // Signed-in saves used to have no local fallback at all — if the Supabase
@@ -1885,7 +1893,40 @@ function clearSyncError(){
   _syncFailed = false;
   hideNotice();
 }
-async function _doSave(){
+// True from the moment a save's request is issued until it resolves. Nothing
+// may overwrite memory from the server while a save is queued, in the air, or
+// known to have failed. This app has no refetch or Realtime path today, so
+// nothing consults it yet — it exists so that adding one later cannot
+// reintroduce the window that bit the other two apps.
+let _saveInFlight = false;
+function savePending(){ return !!(_saveTimer || _saveInFlight || _syncFailed); }
+
+// keepalive lets a request outlive the page that started it, which is the whole
+// problem on a phone: locking the screen freezes the page and kills a normal
+// fetch mid-flight, so the edit reached localStorage and never the server. The
+// browser caps a keepalive body at 64KB, so oversized rows decline and fall
+// back to the unsynced-cache net rather than truncating.
+const KEEPALIVE_MAX_BYTES = 60000;
+async function beaconSave(row, stamp){
+  const body = JSON.stringify(row);
+  if(new Blob([body]).size > KEEPALIVE_MAX_BYTES) return false;
+  let token = '';
+  try{ token = (await sb.auth.getSession()).data.session?.access_token || ''; }catch(e){}
+  if(!token) return false;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/restock_data?on_conflict=user_id`, {
+      method: 'POST', keepalive: true,
+      headers: {'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates'},
+      body
+    });
+    if(!res.ok) return false;
+    markCacheSynced(_currentUser.id, stamp);
+    return true;
+  }catch(e){ return false; }
+}
+
+async function _doSave(opts){
   if(!_currentUser) return;
   if(_guestMode){
     try{ localStorage.setItem('rs-guest-data', JSON.stringify({staples:S, products:PR, settings:SETTINGS})); }catch(e){}
@@ -1895,20 +1936,35 @@ async function _doSave(){
   const stamp = new Date().toISOString();
   SETTINGS._sync = {v: SYNC_PROTOCOL_V, w: DEVICE_ID, at: stamp};
   writeLocalCache(_currentUser.id, stamp, false);
+  const row = {user_id:_currentUser.id, staples:S, products:PR, settings:SETTINGS, updated_at:stamp};
+  // Leaving: there is no time for a retry and no page left to run one, so take
+  // the one shot that can outlive the page. Failure still leaves the cache
+  // dirty, which is what gets the edit restored on the next open.
+  if(opts && opts.leaving){ if(await beaconSave(row, stamp)) clearSyncError(); return; }
+  _saveInFlight = true;
   try{
-    const {error} = await sb.from('restock_data').upsert(
-      {user_id:_currentUser.id, staples:S, products:PR, settings:SETTINGS, updated_at:stamp},
-      {onConflict:'user_id'});
+    const {error} = await sb.from('restock_data').upsert(row, {onConflict:'user_id'});
     if(error){ console.error('save error', error); showSyncError(); }
     else { markCacheSynced(_currentUser.id, stamp); clearSyncError(); }
   }catch(e){ console.error('save error', e); showSyncError(); }
+  finally{ _saveInFlight = false; }
 }
 function saveToStorage(){ clearTimeout(_saveTimer); _saveTimer = setTimeout(() => { _saveTimer = null; _doSave(); }, 600); }
 // A phone is suspended the instant it's locked or swiped away, which can be
 // well inside the debounce — those edits never reached even localStorage.
 function flushSave(){ if(_saveTimer){ clearTimeout(_saveTimer); _saveTimer = null; _doSave(); } }
-document.addEventListener('visibilitychange', () => { if(document.hidden) flushSave(); });
-window.addEventListener('pagehide', flushSave);
+// The backgrounding path. Flushing the debounce was never the hard part — the
+// network write was, because it died with the page. Always re-send on the way
+// out (a queued edit, or one whose ordinary request is still in the air), using
+// the keepalive request that survives the freeze.
+function flushSaveLeaving(){
+  if(!_currentUser || _guestMode) return;
+  if(!savePending()) return;
+  clearTimeout(_saveTimer); _saveTimer = null;
+  _doSave({leaving: true});
+}
+document.addEventListener('visibilitychange', () => { if(document.hidden) flushSaveLeaving(); });
+window.addEventListener('pagehide', flushSaveLeaving);
 async function loadUserData(user){
   let remote = null, remoteOk = false;
   try{

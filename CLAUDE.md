@@ -156,6 +156,30 @@ Rules to preserve:
   the step that overwrites the other device.
 - Flush pending debounced saves on `pagehide` and on backgrounding — a phone is
   suspended the moment it is locked, often inside the debounce window.
+- **Backgrounding must re-send over the network, not just settle the debounce.**
+  Flushing only guaranteed the localStorage write; the upsert itself was an
+  ordinary `fetch` that died with the frozen page, so an edit reached the cache
+  and never the server. The leaving path posts directly to PostgREST with
+  `keepalive: true`, which outlives the page. Bodies over ~60KB exceed the
+  browser cap, so they decline and fall back to the unsynced-cache net rather
+  than truncating.
+- "A save is pending" means queued **or in the air**, not just queued.
+  `savePending()` exists here even though nothing consults it yet — this app has
+  no refetch or Realtime path (see the gap below), and the guard is in place so
+  that adding one later cannot reintroduce the window that bit the other two.
+- **Load-time normalization must not write to the server either.** The `_u` rule
+  below is about the item stamp, but the *row's* `updated_at` is what actually
+  decides a load. `applyPaceRecalcMarks` used to save from `afterLoad`, so merely
+  opening the app republished the row and let a passive device outrank one
+  holding real unsynced work — the bug that destroyed a phone's edits in agenda
+  on 2026-08-08. It no longer saves. That is safe *specifically* because its
+  result is idempotent from the server's state: the adjustment and the deletion
+  of `pace_recalc_from` both stay in memory, so the next load recomputes the
+  identical value from the same untouched base rather than compounding 0.85 each
+  time. Verified by loading five times and getting 0.85 every time; compounding
+  would have hit the 0.5 floor. Do not copy this omission to a load-time fixup
+  whose result is *not* idempotent — see agenda's `syncRestockOutTasks`, which
+  keeps its save because its ledger is real state.
 - Never let a refetch or Realtime update replace memory while a save is pending.
 
 ## Cross-device merge — where it stands
