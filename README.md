@@ -27,6 +27,11 @@ alter table restock_data enable row level security;
 
 create policy "Users manage own restock data" on restock_data
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Required from 2026-10-30: Supabase no longer grants Data API access to new
+-- tables in `public` automatically, and a policy is not a grant.
+grant select, insert, update, delete on public.restock_data to authenticated;
+grant select, insert, update, delete on public.restock_data to service_role;
 ```
 
 If you already have this table from before the staples/products split, just add the new column:
